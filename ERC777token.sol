@@ -310,6 +310,10 @@ contract ERC20 is IERC20 {
     mapping (address => mapping (address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
+    
+    string public name;
+    string public symbol;
+    uint8 public decimals;
 
     /**
      * @dev Total number of tokens in existence.
@@ -318,6 +322,12 @@ contract ERC20 is IERC20 {
         return _totalSupply;
     }
 
+    constructor (string memory _name, string memory _symbol, uint8 _decimals) public {
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+    }
+    
     /**
      * @dev Gets the balance of the specified address.
      * @param owner The address to query the balance of.
