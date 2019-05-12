@@ -624,7 +624,7 @@ contract Ownable {
     }
 }
 
-contract ReferenceToken is ERC777ERC20BaseToken, Ownable {
+contract StandardERC777Token is ERC777ERC20BaseToken, Ownable {
 
     event ERC20Enabled();
     event ERC20Disabled();
