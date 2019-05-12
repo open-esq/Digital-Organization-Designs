@@ -4,6 +4,7 @@
  *
  * This code has not been reviewed.
  * Do not use or deploy this code before reviewing it personally first.
+ * Original Source: https://github.com/0xjac/ERC777/blob/devel/contracts/examples/ReferenceToken.sol
  */
 // solhint-disable-next-line compiler-fixed
 pragma solidity ^0.5.3;
