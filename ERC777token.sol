@@ -1,115 +1,55 @@
-pragma solidity ^0.5.0;
-
-/**
- * @title ERC777 token interface
- * @dev See https://eips.ethereum.org/EIPS/eip-777
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This code has not been reviewed.
+ * Do not use or deploy this code before reviewing it personally first.
  */
-interface IERC777 {
-    function authorizeOperator(address operator) external;
+// solhint-disable-next-line compiler-fixed
+pragma solidity ^0.5.3;
 
-    function revokeOperator(address operator) external;
 
-    function send(address to, uint256 amount, bytes calldata data) external;
-
-    function operatorSend(
-        address from,
-        address to,
-        uint256 amount,
-        bytes calldata data,
-        bytes calldata operatorData
-    ) external;
-
-    function burn(uint256 amount, bytes calldata data) external;
-
-    function operatorBurn(
-        address from,
-        uint256 amount,
-        bytes calldata data,
-        bytes calldata operatorData
-    ) external;
-
+interface ERC20Token {
     function name() external view returns (string memory);
-
     function symbol() external view returns (string memory);
-
+    function decimals() external view returns (uint8);
     function totalSupply() external view returns (uint256);
-
     function balanceOf(address owner) external view returns (uint256);
-
-    function granularity() external view returns (uint256);
-
-    function defaultOperators() external view returns (address[] memory);
-
-    function isOperatorFor(address operator, address tokenHolder) external view returns (bool);
-
-    event Sent(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 amount,
-        bytes data,
-        bytes operatorData
-    );
-
-    event Minted(address indexed operator, address indexed to, uint256 amount, bytes data, bytes operatorData);
-
-    event Burned(address indexed operator, address indexed from, uint256 amount, bytes data, bytes operatorData);
-
-    event AuthorizedOperator(address indexed operator, address indexed tokenHolder);
-
-    event RevokedOperator(address indexed operator, address indexed tokenHolder);
-}
-
-/**
- * @title ERC777 token recipient interface
- * @dev See https://eips.ethereum.org/EIPS/eip-777
- */
-interface IERC777Recipient {
-    function tokensReceived(
-        address operator,
-        address from,
-        address to,
-        uint amount,
-        bytes calldata userData,
-        bytes calldata operatorData
-    ) external;
-}
-
-/**
- * @title ERC777 token sender interface
- * @dev See https://eips.ethereum.org/EIPS/eip-777
- */
-interface IERC777Sender {
-    function tokensToSend(
-        address operator,
-        address from,
-        address to,
-        uint amount,
-        bytes calldata userData,
-        bytes calldata operatorData
-    ) external;
-}
-
-/**
- * @title ERC20 interface
- * @dev see https://eips.ethereum.org/EIPS/eip-20
- */
-interface IERC20 {
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function approve(address spender, uint256 value) external returns (bool);
-
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-
-    function totalSupply() external view returns (uint256);
-
-    function balanceOf(address who) external view returns (uint256);
-
+    function transfer(address to, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
     function allowance(address owner, address spender) external view returns (uint256);
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
+    // solhint-disable-next-line no-simple-event-func-name
+    event Transfer(address indexed from, address indexed to, uint256 amount);
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
+}
 
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+contract ERC1820Registry {
+    function setInterfaceImplementer(address _addr, bytes32 _interfaceHash, address _implementer) external;
+    function getInterfaceImplementer(address _addr, bytes32 _interfaceHash) external view returns (address);
+    function setManager(address _addr, address _newManager) external;
+    function getManager(address _addr) public view returns (address);
+}
+
+
+/// Base client to interact with the registry.
+contract ERC1820Client {
+    ERC1820Registry constant ERC1820REGISTRY = ERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+
+    function setInterfaceImplementation(string memory _interfaceLabel, address _implementation) internal {
+        bytes32 interfaceHash = keccak256(abi.encodePacked(_interfaceLabel));
+        ERC1820REGISTRY.setInterfaceImplementer(address(this), interfaceHash, _implementation);
+    }
+
+    function interfaceAddr(address addr, string memory _interfaceLabel) internal view returns(address) {
+        bytes32 interfaceHash = keccak256(abi.encodePacked(_interfaceLabel));
+        return ERC1820REGISTRY.getInterfaceImplementer(addr, interfaceHash);
+    }
+
+    function delegateManagement(address _newManager) internal {
+        ERC1820REGISTRY.setManager(address(this), _newManager);
+    }
 }
 
 /**
@@ -176,312 +116,605 @@ library SafeMath {
     }
 }
 
-/**
- * Utility library of inline functions on addresses
- */
-library Address {
-    /**
-     * Returns whether the target address is a contract
-     * @dev This function will return false if invoked during the constructor of a contract,
-     * as the code is not actually created until after the constructor finishes.
-     * @param account address of the account to check
-     * @return whether the target address is a contract
-     */
-    function isContract(address account) internal view returns (bool) {
-        uint256 size;
-        // XXX Currently there is no better way to check if there is a contract in an address
-        // than to check the size of the code at that address.
-        // See https://ethereum.stackexchange.com/a/14016/36603
-        // for more details about how this works.
-        // TODO Check this again before the Serenity release, because all addresses will be
-        // contracts then.
-        // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(account) }
-        return size > 0;
-    }
+interface ERC777Token {
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address owner) external view returns (uint256);
+    function granularity() external view returns (uint256);
+
+    function defaultOperators() external view returns (address[] memory);
+    function isOperatorFor(address operator, address tokenHolder) external view returns (bool);
+    function authorizeOperator(address operator) external;
+    function revokeOperator(address operator) external;
+
+    function send(address to, uint256 amount, bytes calldata data) external;
+    function operatorSend(
+        address from,
+        address to,
+        uint256 amount,
+        bytes calldata data,
+        bytes calldata operatorData
+    ) external;
+
+    function burn(uint256 amount, bytes calldata data) external;
+    function operatorBurn(address from, uint256 amount, bytes calldata data, bytes calldata operatorData) external;
+
+    event Sent(
+        address indexed operator,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        bytes data,
+        bytes operatorData
+    );
+    event Minted(address indexed operator, address indexed to, uint256 amount, bytes data, bytes operatorData);
+    event Burned(address indexed operator, address indexed from, uint256 amount, bytes data, bytes operatorData);
+    event AuthorizedOperator(address indexed operator, address indexed tokenHolder);
+    event RevokedOperator(address indexed operator, address indexed tokenHolder);
 }
 
-/**
- * @title ERC1820 Pseudo-introspection Registry Contract
- * @author Jordi Baylina and Jacques Dafflon
- * @notice For more details, see https://eips.ethereum.org/EIPS/eip-1820
- */
-interface IERC1820Registry {
-    /**
-     * @notice Sets the contract which implements a specific interface for an address.
-     * Only the manager defined for that address can set it.
-     * (Each address is the manager for itself until it sets a new manager.)
-     * @param account Address for which to set the interface.
-     * (If 'account' is the zero address then 'msg.sender' is assumed.)
-     * @param interfaceHash Keccak256 hash of the name of the interface as a string.
-     * E.g., 'web3.utils.keccak256("ERC777TokensRecipient")' for the 'ERC777TokensRecipient' interface.
-     * @param implementer Contract address implementing `interfaceHash` for `account.address()`.
-     */
-    function setInterfaceImplementer(address account, bytes32 interfaceHash, address implementer) external;
-
-    /**
-     * @notice Sets `newManager.address()` as manager for `account.address()`.
-     * The new manager will be able to call 'setInterfaceImplementer' for `account.address()`.
-     * @param account Address for which to set the new manager.
-     * @param newManager Address of the new manager for `addr.address()`.
-     * (Pass '0x0' to reset the manager to `account.address()`.)
-     */
-    function setManager(address account, address newManager) external;
-
-    /**
-     *  @notice Updates the cache with whether the contract implements an ERC165 interface or not.
-     *  @param account Address of the contract for which to update the cache.
-     *  @param interfaceId ERC165 interface for which to update the cache.
-     */
-    function updateERC165Cache(address account, bytes4 interfaceId) external;
-
-    /**
-     *  @notice Get the manager of an address.
-     *  @param account Address for which to return the manager.
-     *  @return Address of the manager for a given address.
-     */
-    function getManager(address account) external view returns (address);
-
-    /**
-     *  @notice Query if an address implements an interface and through which contract.
-     *  @param account Address being queried for the implementer of an interface.
-     *  (If 'account' is the zero address then 'msg.sender' is assumed.)
-     *  @param interfaceHash Keccak256 hash of the name of the interface as a string.
-     *  E.g., 'web3.utils.keccak256("ERC777TokensRecipient")' for the 'ERC777TokensRecipient' interface.
-     *  @return The address of the contract which implements the interface `interfaceHash` for `account.address()`
-     *  or '0' if `account.address()` did not register an implementer for this interface.
-     */
-    function getInterfaceImplementer(address account, bytes32 interfaceHash) external view returns (address);
-
-    /**
-     *  @notice Checks whether a contract implements an ERC165 interface or not.
-     *  If the result is not cached a direct lookup on the contract address is performed.
-     *  If the result is not cached or the cached value is out-of-date, the cache MUST be updated manually by calling
-     *  'updateERC165Cache' with the contract address.
-     *  @param account Address of the contract to check.
-     *  @param interfaceId ERC165 interface to check.
-     *  @return True if `account.address()` implements `interfaceId`, false otherwise.
-     */
-    function implementsERC165Interface(address account, bytes4 interfaceId) external view returns (bool);
-
-    /**
-     *  @notice Checks whether a contract implements an ERC165 interface or not without using nor updating the cache.
-     *  @param account Address of the contract to check.
-     *  @param interfaceId ERC165 interface to check.
-     *  @return True if `account.address()` implements `interfaceId`, false otherwise.
-     */
-    function implementsERC165InterfaceNoCache(address account, bytes4 interfaceId) external view returns (bool);
-
-    /**
-     *  @notice Compute the keccak256 hash of an interface given its name.
-     *  @param interfaceName Name of the interface.
-     *  @return The keccak256 hash of an interface name.
-     */
-    function interfaceHash(string calldata interfaceName) external pure returns (bytes32);
-
-    /**
-     *  @notice Indicates a contract is the `implementer` of `interfaceHash` for `account`.
-     */
-    event InterfaceImplementerSet(address indexed account, bytes32 indexed interfaceHash, address indexed implementer);
-
-    /**
-     *  @notice Indicates `newManager` is the address of the new manager for `account`.
-     */
-    event ManagerChanged(address indexed account, address indexed newManager);
+interface ERC777TokensSender {
+    function tokensToSend(
+        address operator,
+        address from,
+        address to,
+        uint amount,
+        bytes calldata data,
+        bytes calldata operatorData
+    ) external;
 }
 
-/**
- * @title Standard ERC20 token
- *
- * @dev Implementation of the basic standard token.
- * https://eips.ethereum.org/EIPS/eip-20
- * Originally based on code by FirstBlood:
- * https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
- *
- * This implementation emits additional Approval events, allowing applications to reconstruct the allowance status for
- * all accounts just by listening to said events. Note that this isn't required by the specification, and other
- * compliant implementations may not do it.
- */
-contract ERC20 is IERC20 {
+interface ERC777TokensRecipient {
+    function tokensReceived(
+        address operator,
+        address from,
+        address to,
+        uint256 amount,
+        bytes calldata data,
+        bytes calldata operatorData
+    ) external;
+}
+
+contract ERC777BaseToken is ERC777Token, ERC1820Client {
     using SafeMath for uint256;
 
-    mapping (address => uint256) private _balances;
+    string internal mName;
+    string internal mSymbol;
+    uint256 internal mGranularity;
+    uint256 internal mTotalSupply;
 
-    mapping (address => mapping (address => uint256)) private _allowances;
 
-    uint256 private _totalSupply;
-    
-    string public name;
-    string public symbol;
-    uint8 public decimals;
+    mapping(address => uint) internal mBalances;
 
-    /**
-     * @dev Total number of tokens in existence.
-     */
-    function totalSupply() public view returns (uint256) {
-        return _totalSupply;
+    address[] internal mDefaultOperators;
+    mapping(address => bool) internal mIsDefaultOperator;
+    mapping(address => mapping(address => bool)) internal mRevokedDefaultOperator;
+    mapping(address => mapping(address => bool)) internal mAuthorizedOperators;
+
+    /* -- Constructor -- */
+    //
+    /// @notice Constructor to create a ReferenceToken
+    /// @param _name Name of the new token
+    /// @param _symbol Symbol of the new token.
+    /// @param _granularity Minimum transferable chunk.
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _granularity,
+        address[] memory _defaultOperators
+    ) internal {
+        mName = _name;
+        mSymbol = _symbol;
+        mTotalSupply = 0;
+        require(_granularity >= 1, "Granularity must be > 1");
+        mGranularity = _granularity;
+
+        mDefaultOperators = _defaultOperators;
+        for (uint256 i = 0; i < mDefaultOperators.length; i++) { mIsDefaultOperator[mDefaultOperators[i]] = true; }
+
+        setInterfaceImplementation("ERC777Token", address(this));
     }
 
-    constructor (string memory _name, string memory _symbol, uint8 _decimals) public {
-        name = _name;
-        symbol = _symbol;
-        decimals = _decimals;
-    }
-    
-    /**
-     * @dev Gets the balance of the specified address.
-     * @param owner The address to query the balance of.
-     * @return A uint256 representing the amount owned by the passed address.
-     */
-    function balanceOf(address owner) public view returns (uint256) {
-        return _balances[owner];
+    /* -- ERC777 Interface Implementation -- */
+    //
+    /// @return the name of the token
+    function name() public view returns (string memory) { return mName; }
+
+    /// @return the symbol of the token
+    function symbol() public view returns (string memory) { return mSymbol; }
+
+    /// @return the granularity of the token
+    function granularity() public view returns (uint256) { return mGranularity; }
+
+    /// @return the total supply of the token
+    function totalSupply() public view returns (uint256) { return mTotalSupply; }
+
+    /// @notice Return the account balance of some account
+    /// @param _tokenHolder Address for which the balance is returned
+    /// @return the balance of `_tokenAddress`.
+    function balanceOf(address _tokenHolder) public view returns (uint256) { return mBalances[_tokenHolder]; }
+
+    /// @notice Return the list of default operators
+    /// @return the list of all the default operators
+    function defaultOperators() public view returns (address[] memory) { return mDefaultOperators; }
+
+    /// @notice Send `_amount` of tokens to address `_to` passing `_data` to the recipient
+    /// @param _to The address of the recipient
+    /// @param _amount The number of tokens to be sent
+    function send(address _to, uint256 _amount, bytes calldata _data) external {
+        doSend(msg.sender, msg.sender, _to, _amount, _data, "", true);
     }
 
-    /**
-     * @dev Function to check the amount of tokens that an owner allowed to a spender.
-     * @param owner address The address which owns the funds.
-     * @param spender address The address which will spend the funds.
-     * @return A uint256 specifying the amount of tokens still available for the spender.
-     */
-    function allowance(address owner, address spender) public view returns (uint256) {
-        return _allowances[owner][spender];
+    /// @notice Authorize a third party `_operator` to manage (send) `msg.sender`'s tokens.
+    /// @param _operator The operator that wants to be Authorized
+    function authorizeOperator(address _operator) external {
+        require(_operator != msg.sender, "Cannot authorize yourself as an operator");
+        if (mIsDefaultOperator[_operator]) {
+            mRevokedDefaultOperator[_operator][msg.sender] = false;
+        } else {
+            mAuthorizedOperators[_operator][msg.sender] = true;
+        }
+        emit AuthorizedOperator(_operator, msg.sender);
     }
 
-    /**
-     * @dev Transfer token to a specified address.
-     * @param to The address to transfer to.
-     * @param value The amount to be transferred.
-     */
-    function transfer(address to, uint256 value) public returns (bool) {
-        _transfer(msg.sender, to, value);
+    /// @notice Revoke a third party `_operator`'s rights to manage (send) `msg.sender`'s tokens.
+    /// @param _operator The operator that wants to be Revoked
+    function revokeOperator(address _operator) external {
+        require(_operator != msg.sender, "Cannot revoke yourself as an operator");
+        if (mIsDefaultOperator[_operator]) {
+            mRevokedDefaultOperator[_operator][msg.sender] = true;
+        } else {
+            mAuthorizedOperators[_operator][msg.sender] = false;
+        }
+        emit RevokedOperator(_operator, msg.sender);
+    }
+
+    /// @notice Check whether the `_operator` address is allowed to manage the tokens held by `_tokenHolder` address.
+    /// @param _operator address to check if it has the right to manage the tokens
+    /// @param _tokenHolder address which holds the tokens to be managed
+    /// @return `true` if `_operator` is authorized for `_tokenHolder`
+    function isOperatorFor(address _operator, address _tokenHolder) public view returns (bool) {
+        return (_operator == _tokenHolder // solium-disable-line operator-whitespace
+            || mAuthorizedOperators[_operator][_tokenHolder]
+            || (mIsDefaultOperator[_operator] && !mRevokedDefaultOperator[_operator][_tokenHolder]));
+    }
+
+    /// @notice Send `_amount` of tokens on behalf of the address `from` to the address `to`.
+    /// @param _from The address holding the tokens being sent
+    /// @param _to The address of the recipient
+    /// @param _amount The number of tokens to be sent
+    /// @param _data Data generated by the user to be sent to the recipient
+    /// @param _operatorData Data generated by the operator to be sent to the recipient
+    function operatorSend(
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes calldata _data,
+        bytes calldata _operatorData
+    )
+        external
+    {
+        require(isOperatorFor(msg.sender, _from), "Not an operator");
+        doSend(msg.sender, _from, _to, _amount, _data, _operatorData, true);
+    }
+
+    function burn(uint256 _amount, bytes calldata _data) external {
+        doBurn(msg.sender, msg.sender, _amount, _data, "");
+    }
+
+    function operatorBurn(
+        address _tokenHolder,
+        uint256 _amount,
+        bytes calldata _data,
+        bytes calldata _operatorData
+    )
+        external
+    {
+        require(isOperatorFor(msg.sender, _tokenHolder), "Not an operator");
+        doBurn(msg.sender, _tokenHolder, _amount, _data, _operatorData);
+    }
+
+    /* -- Helper Functions -- */
+    //
+    /// @notice Internal function that ensures `_amount` is multiple of the granularity
+    /// @param _amount The quantity that want's to be checked
+    function requireMultiple(uint256 _amount) internal view {
+        require(_amount % mGranularity == 0, "Amount is not a multiple of granualrity");
+    }
+
+    /// @notice Check whether an address is a regular address or not.
+    /// @param _addr Address of the contract that has to be checked
+    /// @return `true` if `_addr` is a regular address (not a contract)
+    function isRegularAddress(address _addr) internal view returns(bool) {
+        if (_addr == address(0)) { return false; }
+        uint size;
+        assembly { size := extcodesize(_addr) } // solium-disable-line security/no-inline-assembly
+        return size == 0;
+    }
+
+    /// @notice Helper function actually performing the sending of tokens.
+    /// @param _operator The address performing the send
+    /// @param _from The address holding the tokens being sent
+    /// @param _to The address of the recipient
+    /// @param _amount The number of tokens to be sent
+    /// @param _data Data generated by the user to be passed to the recipient
+    /// @param _operatorData Data generated by the operator to be passed to the recipient
+    /// @param _preventLocking `true` if you want this function to throw when tokens are sent to a contract not
+    ///  implementing `ERC777tokensRecipient`.
+    ///  ERC777 native Send functions MUST set this parameter to `true`, and backwards compatible ERC20 transfer
+    ///  functions SHOULD set this parameter to `false`.
+    function doSend(
+        address _operator,
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes memory _data,
+        bytes memory _operatorData,
+        bool _preventLocking
+    )
+        internal
+    {
+        requireMultiple(_amount);
+
+        callSender(_operator, _from, _to, _amount, _data, _operatorData);
+
+        require(_to != address(0), "Cannot send to 0x0");
+        require(mBalances[_from] >= _amount, "Not enough funds");
+
+        mBalances[_from] = mBalances[_from].sub(_amount);
+        mBalances[_to] = mBalances[_to].add(_amount);
+
+        callRecipient(_operator, _from, _to, _amount, _data, _operatorData, _preventLocking);
+
+        emit Sent(_operator, _from, _to, _amount, _data, _operatorData);
+    }
+
+    /// @notice Helper function actually performing the burning of tokens.
+    /// @param _operator The address performing the burn
+    /// @param _tokenHolder The address holding the tokens being burn
+    /// @param _amount The number of tokens to be burnt
+    /// @param _data Data generated by the token holder
+    /// @param _operatorData Data generated by the operator
+    function doBurn(
+        address _operator,
+        address _tokenHolder,
+        uint256 _amount,
+        bytes memory _data,
+        bytes memory _operatorData
+    )
+        internal
+    {
+        callSender(_operator, _tokenHolder, address(0), _amount, _data, _operatorData);
+
+        requireMultiple(_amount);
+        require(balanceOf(_tokenHolder) >= _amount, "Not enough funds");
+
+        mBalances[_tokenHolder] = mBalances[_tokenHolder].sub(_amount);
+        mTotalSupply = mTotalSupply.sub(_amount);
+
+        emit Burned(_operator, _tokenHolder, _amount, _data, _operatorData);
+    }
+
+    /// @notice Helper function that checks for ERC777TokensRecipient on the recipient and calls it.
+    ///  May throw according to `_preventLocking`
+    /// @param _operator The address performing the send or mint
+    /// @param _from The address holding the tokens being sent
+    /// @param _to The address of the recipient
+    /// @param _amount The number of tokens to be sent
+    /// @param _data Data generated by the user to be passed to the recipient
+    /// @param _operatorData Data generated by the operator to be passed to the recipient
+    /// @param _preventLocking `true` if you want this function to throw when tokens are sent to a contract not
+    ///  implementing `ERC777TokensRecipient`.
+    ///  ERC777 native Send functions MUST set this parameter to `true`, and backwards compatible ERC20 transfer
+    ///  functions SHOULD set this parameter to `false`.
+    function callRecipient(
+        address _operator,
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes memory _data,
+        bytes memory _operatorData,
+        bool _preventLocking
+    )
+        internal
+    {
+        address recipientImplementation = interfaceAddr(_to, "ERC777TokensRecipient");
+        if (recipientImplementation != address(0)) {
+            ERC777TokensRecipient(recipientImplementation).tokensReceived(
+                _operator, _from, _to, _amount, _data, _operatorData);
+        } else if (_preventLocking) {
+            require(isRegularAddress(_to), "Cannot send to contract without ERC777TokensRecipient");
+        }
+    }
+
+    /// @notice Helper function that checks for ERC777TokensSender on the sender and calls it.
+    ///  May throw according to `_preventLocking`
+    /// @param _from The address holding the tokens being sent
+    /// @param _to The address of the recipient
+    /// @param _amount The amount of tokens to be sent
+    /// @param _data Data generated by the user to be passed to the recipient
+    /// @param _operatorData Data generated by the operator to be passed to the recipient
+    ///  implementing `ERC777TokensSender`.
+    ///  ERC777 native Send functions MUST set this parameter to `true`, and backwards compatible ERC20 transfer
+    ///  functions SHOULD set this parameter to `false`.
+    function callSender(
+        address _operator,
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes memory _data,
+        bytes memory _operatorData
+    )
+        internal
+    {
+        address senderImplementation = interfaceAddr(_from, "ERC777TokensSender");
+        if (senderImplementation == address(0)) { return; }
+        ERC777TokensSender(senderImplementation).tokensToSend(
+            _operator, _from, _to, _amount, _data, _operatorData);
+    }
+}
+
+contract ERC777ERC20BaseToken is ERC20Token, ERC777BaseToken {
+    bool internal mErc20compatible;
+
+    mapping(address => mapping(address => uint256)) internal mAllowed;
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _granularity,
+        address[] memory _defaultOperators
+    )
+        internal ERC777BaseToken(_name, _symbol, _granularity, _defaultOperators)
+    {
+        mErc20compatible = true;
+        setInterfaceImplementation("ERC20Token", address(this));
+    }
+
+    /// @notice This modifier is applied to erc20 obsolete methods that are
+    ///  implemented only to maintain backwards compatibility. When the erc20
+    ///  compatibility is disabled, this methods will fail.
+    modifier erc20 () {
+        require(mErc20compatible, "ERC20 is disabled");
+        _;
+    }
+
+    /// @notice For Backwards compatibility
+    /// @return The decimals of the token. Forced to 18 in ERC777.
+    function decimals() public erc20 view returns (uint8) { return uint8(18); }
+
+    /// @notice ERC20 backwards compatible transfer.
+    /// @param _to The address of the recipient
+    /// @param _amount The number of tokens to be transferred
+    /// @return `true`, if the transfer can't be done, it should fail.
+    function transfer(address _to, uint256 _amount) public erc20 returns (bool success) {
+        doSend(msg.sender, msg.sender, _to, _amount, "", "", false);
         return true;
     }
 
-    /**
-     * @dev Approve the passed address to spend the specified amount of tokens on behalf of msg.sender.
-     * Beware that changing an allowance with this method brings the risk that someone may use both the old
-     * and the new allowance by unfortunate transaction ordering. One possible solution to mitigate this
-     * race condition is to first reduce the spender's allowance to 0 and set the desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     * @param spender The address which will spend the funds.
-     * @param value The amount of tokens to be spent.
-     */
-    function approve(address spender, uint256 value) public returns (bool) {
-        _approve(msg.sender, spender, value);
+    /// @notice ERC20 backwards compatible transferFrom.
+    /// @param _from The address holding the tokens being transferred
+    /// @param _to The address of the recipient
+    /// @param _amount The number of tokens to be transferred
+    /// @return `true`, if the transfer can't be done, it should fail.
+    function transferFrom(address _from, address _to, uint256 _amount) public erc20 returns (bool success) {
+        require(_amount <= mAllowed[_from][msg.sender], "Not enough funds allowed");
+
+        // Cannot be after doSend because of tokensReceived re-entry
+        mAllowed[_from][msg.sender] = mAllowed[_from][msg.sender].sub(_amount);
+        doSend(msg.sender, _from, _to, _amount, "", "", false);
         return true;
     }
 
-    /**
-     * @dev Transfer tokens from one address to another.
-     * Note that while this function emits an Approval event, this is not required as per the specification,
-     * and other compliant implementations may not emit the event.
-     * @param from address The address which you want to send tokens from
-     * @param to address The address which you want to transfer to
-     * @param value uint256 the amount of tokens to be transferred
-     */
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
-        _transfer(from, to, value);
-        _approve(from, msg.sender, _allowances[from][msg.sender].sub(value));
+    /// @notice ERC20 backwards compatible approve.
+    ///  `msg.sender` approves `_spender` to spend `_amount` tokens on its behalf.
+    /// @param _spender The address of the account able to transfer the tokens
+    /// @param _amount The number of tokens to be approved for transfer
+    /// @return `true`, if the approve can't be done, it should fail.
+    function approve(address _spender, uint256 _amount) public erc20 returns (bool success) {
+        mAllowed[msg.sender][_spender] = _amount;
+        emit Approval(msg.sender, _spender, _amount);
         return true;
     }
 
-    /**
-     * @dev Increase the amount of tokens that an owner allowed to a spender.
-     * approve should be called when _allowances[msg.sender][spender] == 0. To increment
-     * allowed value is better to use this function to avoid 2 calls (and wait until
-     * the first transaction is mined)
-     * From MonolithDAO Token.sol
-     * Emits an Approval event.
-     * @param spender The address which will spend the funds.
-     * @param addedValue The amount of tokens to increase the allowance by.
-     */
-    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].add(addedValue));
-        return true;
+    /// @notice ERC20 backwards compatible allowance.
+    ///  This function makes it easy to read the `allowed[]` map
+    /// @param _owner The address of the account that owns the token
+    /// @param _spender The address of the account able to transfer the tokens
+    /// @return Amount of remaining tokens of _owner that _spender is allowed
+    ///  to spend
+    function allowance(address _owner, address _spender) public erc20 view returns (uint256 remaining) {
+        return mAllowed[_owner][_spender];
     }
 
-    /**
-     * @dev Decrease the amount of tokens that an owner allowed to a spender.
-     * approve should be called when _allowances[msg.sender][spender] == 0. To decrement
-     * allowed value is better to use this function to avoid 2 calls (and wait until
-     * the first transaction is mined)
-     * From MonolithDAO Token.sol
-     * Emits an Approval event.
-     * @param spender The address which will spend the funds.
-     * @param subtractedValue The amount of tokens to decrease the allowance by.
-     */
-    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue));
-        return true;
+    function doSend(
+        address _operator,
+        address _from,
+        address _to,
+        uint256 _amount,
+        bytes memory _data,
+        bytes memory _operatorData,
+        bool _preventLocking
+    )
+        internal
+    {
+        super.doSend(_operator, _from, _to, _amount, _data, _operatorData, _preventLocking);
+        if (mErc20compatible) { emit Transfer(_from, _to, _amount); }
     }
 
-    /**
-     * @dev Transfer token for a specified addresses.
-     * @param from The address to transfer from.
-     * @param to The address to transfer to.
-     * @param value The amount to be transferred.
-     */
-    function _transfer(address from, address to, uint256 value) internal {
-        require(to != address(0), "ERC20: transfer to the zero address");
-
-        _balances[from] = _balances[from].sub(value);
-        _balances[to] = _balances[to].add(value);
-        emit Transfer(from, to, value);
+    function doBurn(
+        address _operator,
+        address _tokenHolder,
+        uint256 _amount,
+        bytes memory _data,
+        bytes memory _operatorData
+    )
+        internal
+    {
+        super.doBurn(_operator, _tokenHolder, _amount, _data, _operatorData);
+        if (mErc20compatible) { emit Transfer(_tokenHolder, address(0), _amount); }
     }
+}
+
+contract Ownable {
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /**
-     * @dev Internal function that mints an amount of the token and assigns it to
-     * an account. This encapsulates the modification of balances such that the
-     * proper events are emitted.
-     * @param account The account that will receive the created tokens.
-     * @param value The amount that will be created.
-     */
-    function _mint(address account, uint256 value) internal {
-        require(account != address(0), "ERC20: mint to the zero address");
-
-        _totalSupply = _totalSupply.add(value);
-        _balances[account] = _balances[account].add(value);
-        emit Transfer(address(0), account, value);
-    }
-
-    /**
-     * @dev Internal function that burns an amount of the token of a given
+     * @dev The Ownable constructor sets the original `owner` of the contract to the sender
      * account.
-     * @param account The account whose tokens will be burnt.
-     * @param value The amount that will be burnt.
      */
-    function _burn(address account, uint256 value) internal {
-        require(account != address(0), "ERC20: burn from the zero address");
-
-        _totalSupply = _totalSupply.sub(value);
-        _balances[account] = _balances[account].sub(value);
-        emit Transfer(account, address(0), value);
+    constructor () internal {
+        _owner = msg.sender;
+        emit OwnershipTransferred(address(0), _owner);
     }
 
     /**
-     * @dev Approve an address to spend another addresses' tokens.
-     * @param owner The address that owns the tokens.
-     * @param spender The address that will spend the tokens.
-     * @param value The number of tokens that can be spent.
+     * @return the address of the owner.
      */
-    function _approve(address owner, address spender, uint256 value) internal {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
-
-        _allowances[owner][spender] = value;
-        emit Approval(owner, spender, value);
+    function owner() public view returns (address) {
+        return _owner;
     }
 
     /**
-     * @dev Internal function that burns an amount of the token of a given
-     * account, deducting from the sender's allowance for said account. Uses the
-     * internal burn function.
-     * Emits an Approval event (reflecting the reduced allowance).
-     * @param account The account whose tokens will be burnt.
-     * @param value The amount that will be burnt.
+     * @dev Throws if called by any account other than the owner.
      */
-    function _burnFrom(address account, uint256 value) internal {
-        _burn(account, value);
-        _approve(account, msg.sender, _allowances[account][msg.sender].sub(value));
+    modifier onlyOwner() {
+        require(isOwner(), "Ownable: caller is not the owner");
+        _;
+    }
+
+    /**
+     * @return true if `msg.sender` is the owner of the contract.
+     */
+    function isOwner() public view returns (bool) {
+        return msg.sender == _owner;
+    }
+
+    /**
+     * @dev Allows the current owner to relinquish control of the contract.
+     * It will not be possible to call the functions with the `onlyOwner`
+     * modifier anymore.
+     * @notice Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public onlyOwner {
+        emit OwnershipTransferred(_owner, address(0));
+        _owner = address(0);
+    }
+
+    /**
+     * @dev Allows the current owner to transfer control of the contract to a newOwner.
+     * @param newOwner The address to transfer ownership to.
+     */
+    function transferOwnership(address newOwner) public onlyOwner {
+        _transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers control of the contract to a newOwner.
+     * @param newOwner The address to transfer ownership to.
+     */
+    function _transferOwnership(address newOwner) internal {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
+}
+
+contract ReferenceToken is ERC777ERC20BaseToken, Ownable {
+
+    event ERC20Enabled();
+    event ERC20Disabled();
+
+    address private mBurnOperator;
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _granularity,
+        address[] memory _defaultOperators,
+        address _burnOperator,
+        uint256 _initialSupply
+    )
+        public ERC777ERC20BaseToken(_name, _symbol, _granularity, _defaultOperators)
+    {
+        mBurnOperator = _burnOperator;
+        doMint(msg.sender, _initialSupply, "", "");
+    }
+
+    /// @notice Disables the ERC20 interface. This function can only be called
+    ///  by the owner.
+    function disableERC20() public onlyOwner {
+        mErc20compatible = false;
+        setInterfaceImplementation("ERC20Token", address(0));
+        emit ERC20Disabled();
+    }
+
+    /// @notice Re enables the ERC20 interface. This function can only be called
+    ///  by the owner.
+    function enableERC20() public onlyOwner {
+        mErc20compatible = true;
+        setInterfaceImplementation("ERC20Token", address(this));
+        emit ERC20Enabled();
+    }
+
+    /* -- Mint And Burn Functions (not part of the ERC777 standard, only the Events/tokensReceived call are) -- */
+    //
+    /// @notice Generates `_amount` tokens to be assigned to `_tokenHolder`
+    ///  Sample mint function to showcase the use of the `Minted` event and the logic to notify the recipient.
+    /// @param _tokenHolder The address that will be assigned the new tokens
+    /// @param _amount The quantity of tokens generated
+    /// @param _operatorData Data that will be passed to the recipient as a first transfer
+    function mint(
+        address _tokenHolder,
+        uint256 _amount,
+        bytes calldata _data,
+        bytes calldata _operatorData
+    )
+        external onlyOwner
+    {
+        doMint(_tokenHolder, _amount, _data, _operatorData);
+    }
+
+    /// @notice Burns `_amount` tokens from `msg.sender`
+    ///  Silly example of overriding the `burn` function to only let the owner burn its tokens.
+    ///  Do not forget to override the `burn` function in your token contract if you want to prevent users from
+    ///  burning their tokens.
+    /// @param _amount The quantity of tokens to burn
+    function burn(uint256 _amount, bytes calldata _data) external onlyOwner {
+        doBurn(msg.sender, msg.sender, _amount, _data, "");
+    }
+
+    /// @notice Burns `_amount` tokens from `_tokenHolder` by `_operator`
+    ///  Silly example of overriding the `operatorBurn` function to only let a specific operator burn tokens.
+    ///  Do not forget to override the `operatorBurn` function in your token contract if you want to prevent users from
+    ///  burning their tokens.
+    /// @param _tokenHolder The address that will lose the tokens
+    /// @param _amount The quantity of tokens to burn
+    function operatorBurn(
+        address _tokenHolder,
+        uint256 _amount,
+        bytes calldata _data,
+        bytes calldata _operatorData
+    )
+        external
+    {
+        require(msg.sender == mBurnOperator, "Not a burn operator");
+        require(isOperatorFor(msg.sender, _tokenHolder), "Not an operator");
+        doBurn(msg.sender, _tokenHolder, _amount, _data, _operatorData);
+    }
+
+    function doMint(address _tokenHolder, uint256 _amount, bytes memory _data, bytes memory _operatorData) private {
+        requireMultiple(_amount);
+        mTotalSupply = mTotalSupply.add(_amount);
+        mBalances[_tokenHolder] = mBalances[_tokenHolder].add(_amount);
+
+        callRecipient(msg.sender, address(0), _tokenHolder, _amount, _data, _operatorData, true);
+
+        emit Minted(msg.sender, _tokenHolder, _amount, _data, _operatorData);
+        if (mErc20compatible) { emit Transfer(address(0), _tokenHolder, _amount); }
     }
 }
