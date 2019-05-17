@@ -133,7 +133,7 @@ contract Ownable {
    * account.
    */
   function Ownable() public {
-    owner = 0x077086E2bc65a728E2aE0d7E22e4A767cE7802b3;
+    owner = msg.sender;
   }
 
 
@@ -294,11 +294,11 @@ constructor(string _symbol, string _name, address _owner, string _legend, string
     	balances[_owner] = _totalSupply;
     	emit Transfer(address(0), _owner, _totalSupply);
 }
-   function updateLegend(string _legend) public {
+   function updateLegend(string _legend) onlyOwner public {
     	legend = _legend;
 	}
     
-    function updateURL(string _url) public {
+    function updateURL(string _url) onlyOwner public {
     	url = _url;
 	}
 
