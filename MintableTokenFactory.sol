@@ -22,11 +22,11 @@ contract MintableTokenFactory {
         return contracts.length;
     }
 
-    function newMintableToken(string symbol, string name, address _owner)
+    function newMintableToken(string symbol, string name, address _owner, string legend, string url)
         public
         returns(address newContract)
     {
-        MintableToken c = new MintableToken(symbol, name, _owner);
+        MintableToken c = new MintableToken(symbol, name, _owner, legend, url);
         contracts.push(c);
         lastContractAddress = address(c);
         emit newMintableTokenContract(c);
@@ -133,7 +133,7 @@ contract Ownable {
    * account.
    */
   function Ownable() public {
-    owner = 0x077086E2bc65a728E2aE0d7E22e4A767cE7802b3;
+    owner = msg.sender;
   }
 
 
@@ -276,21 +276,31 @@ contract MintableToken is StandardToken {
   event MintFinished();
   string public symbol;
   string public name;
+  string public legend;
+  string public url;
   uint8 public decimals = 18;
   uint public _totalSupply;
   address public _owner;
 
   bool public mintingFinished = false;
 
-constructor(string _symbol, string _name, address _owner) public {
+constructor(string _symbol, string _name, address _owner, string _legend, string _url) public {
     	symbol = _symbol;
     	name = _name;
     	decimals = 18;
+    	legend = _legend;
+    	url = _url;
     	totalSupply = _totalSupply;
     	balances[_owner] = _totalSupply;
     	emit Transfer(address(0), _owner, _totalSupply);
 }
-
+   function updateLegend(string _legend) onlyOwner public {
+    	legend = _legend;
+	}
+    
+    function updateURL(string _url) onlyOwner public {
+    	url = _url;
+	}
 
   modifier canMint() {
     require(!mintingFinished);
