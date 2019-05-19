@@ -1,6 +1,6 @@
-pragma solidity ^0.4.22;
+pragma solidity >0.4.22 <0.5.0;
 
-contract MintableTokenFactory {
+contract DigitalAssetFactory {
     address[] public contracts;
     address public lastContractAddress;
     
@@ -16,17 +16,17 @@ contract MintableTokenFactory {
 
     function getContractCount()
         public
-        constant
+        view
         returns(uint contractCount)
     {
         return contracts.length;
     }
 
-    function newMintableToken(string symbol, string name, address _owner, string legend, string url)
+    function newMintableToken(string memory symbol, string memory name, uint totalSupply, address _owner)
         public
         returns(address newContract)
     {
-        MintableToken c = new MintableToken(symbol, name, _owner, legend, url);
+        MintableToken c = new MintableToken(symbol, name, totalSupply, _owner);
         contracts.push(c);
         lastContractAddress = address(c);
         emit newMintableTokenContract(c);
@@ -35,7 +35,7 @@ contract MintableTokenFactory {
 
     function seeMintableToken(uint pos)
         public
-        constant
+        view
         returns(address contractAddress)
     {
         return address(contracts[pos]);
@@ -49,7 +49,7 @@ contract MintableTokenFactory {
  */
 contract ERC20Basic {
   uint256 public totalSupply;
-  function balanceOf(address who) public constant returns (uint256);
+  function balanceOf(address who) public view returns (uint256);
   function transfer(address to, uint256 value) public returns (bool);
   event Transfer(address indexed from, address indexed to, uint256 value);
 }
@@ -59,7 +59,7 @@ contract ERC20Basic {
  * @dev see https://github.com/ethereum/EIPs/issues/20
  */
 contract ERC20 is ERC20Basic {
-  function allowance(address owner, address spender) public constant returns (uint256);
+  function allowance(address owner, address spender) public view returns (uint256);
   function transferFrom(address from, address to, uint256 value) public returns (bool);
   function approve(address spender, uint256 value) public returns (bool);
   event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -132,7 +132,7 @@ contract Ownable {
    * @dev The Ownable constructor sets the original `owner` of the contract to the sender
    * account.
    */
-  function Ownable() public {
+  function OwnableFunction() private {
     owner = msg.sender;
   }
 
@@ -152,7 +152,7 @@ contract Ownable {
    */
   function transferOwnership(address newOwner) public onlyOwner {
     require(newOwner != address(0));
-    OwnershipTransferred(owner, newOwner);
+    emit OwnershipTransferred(owner, newOwner);
     owner = newOwner;
 }
 }
@@ -181,7 +181,7 @@ contract StandardToken is ERC20, Ownable {
     // SafeMath.sub will throw if there is not enough balance.
     balances[msg.sender] = balances[msg.sender].sub(_value);
     balances[_to] = balances[_to].add(_value);
-    Transfer(msg.sender, _to, _value);
+    emit Transfer(msg.sender, _to, _value);
     return true;
   }
 
@@ -190,7 +190,7 @@ contract StandardToken is ERC20, Ownable {
   * @param _owner The address to query the the balance of.
   * @return An uint256 representing the amount owned by the passed address.
   */
-  function balanceOf(address _owner) public constant returns (uint256 balance) {
+  function balanceOf(address _owner) public view returns (uint256 balance) {
     return balances[_owner];
   }
 
@@ -211,7 +211,7 @@ contract StandardToken is ERC20, Ownable {
     balances[_from] = balances[_from].sub(_value);
     balances[_to] = balances[_to].add(_value);
     allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
-    Transfer(_from, _to, _value);
+    emit Transfer(_from, _to, _value);
     return true;
   }
 
@@ -227,7 +227,7 @@ contract StandardToken is ERC20, Ownable {
    */
   function approve(address _spender, uint256 _value) public returns (bool) {
     allowed[msg.sender][_spender] = _value;
-    Approval(msg.sender, _spender, _value);
+    emit Approval(msg.sender, _spender, _value);
     return true;
   }
 
@@ -237,7 +237,7 @@ contract StandardToken is ERC20, Ownable {
    * @param _spender address The address which will spend the funds.
    * @return A uint256 specifying the amount of tokens still available for the spender.
    */
-  function allowance(address _owner, address _spender) public constant returns (uint256) {
+  function allowance(address _owner, address _spender) public view returns (uint256) {
     return allowed[_owner][_spender];
   }
 
@@ -249,7 +249,7 @@ contract StandardToken is ERC20, Ownable {
    */
   function increaseApproval (address _spender, uint _addedValue) public returns (bool) {
     allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
-    Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
+    emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
     return true;
   }
 
@@ -260,7 +260,7 @@ contract StandardToken is ERC20, Ownable {
     } else {
       allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
     }
-    Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
+    emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
     return true;
   }
 }
@@ -274,40 +274,35 @@ contract StandardToken is ERC20, Ownable {
 contract MintableToken is StandardToken {
   event Mint(address indexed to, uint256 amount);
   event MintFinished();
+  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
   string public symbol;
   string public name;
-  string public legend;
-  string public url;
   uint8 public decimals = 18;
-  uint public _totalSupply;
-  address public _owner;
+  uint public totalSupply;
+  address public owner;
 
   bool public mintingFinished = false;
 
-constructor(string _symbol, string _name, address _owner, string _legend, string _url) public {
+constructor(string memory _symbol, string memory _name, uint _totalSupply, address _owner) public {
     	symbol = _symbol;
     	name = _name;
     	decimals = 18;
-    	legend = _legend;
-    	url = _url;
     	totalSupply = _totalSupply;
+    	owner = _owner;
     	balances[_owner] = _totalSupply;
     	emit Transfer(address(0), _owner, _totalSupply);
 }
-   function updateLegend(string _legend) onlyOwner public {
-    	legend = _legend;
-	}
-    
-    function updateURL(string _url) onlyOwner public {
-    	url = _url;
-	}
 
   modifier canMint() {
     require(!mintingFinished);
     _;
   }
   
-
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
+  
   /**
    * @dev Function to mint tokens
    * @param _to The address that will receive the minted tokens.
@@ -317,8 +312,8 @@ constructor(string _symbol, string _name, address _owner, string _legend, string
   function mint(address _to, uint256 _amount) onlyOwner canMint public returns (bool) {
     totalSupply = totalSupply.add(_amount);
     balances[_to] = balances[_to].add(_amount);
-    Mint(_to, _amount);
-    Transfer(address(0), _to, _amount);
+    emit Mint(_to, _amount);
+    emit Transfer(address(0), _to, _amount);
     return true;
   }
 
@@ -328,7 +323,13 @@ constructor(string _symbol, string _name, address _owner, string _legend, string
    */
   function finishMinting() onlyOwner canMint public returns (bool) {
     mintingFinished = true;
-    MintFinished();
+    emit MintFinished();
     return true;
   }
+  
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    emit OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+}
 }
