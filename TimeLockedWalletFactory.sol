@@ -292,20 +292,19 @@ contract TimeLockedWallet {
     createdAt = now;
   }
     
+    // keep all the ether sent to this address
     function() payable public { 
     Received(msg.sender, msg.value);
   }
   
-    function info() public view returns(address, address, uint, uint, uint) {
-    return (creator, owner, unlockDate, createdAt, this.balance);
-  }
-  
+    // callable by owner only, after specified time
     function withdraw() onlyOwner public {
     require(now >= unlockDate);
     msg.sender.transfer(this.balance);
     Withdrew(msg.sender, this.balance);
   }
   
+    // callable by owner only, after specified time, only for Tokens implementing ERC20
     function withdrawTokens(address _tokenContract) onlyOwner public {
     require(now >= unlockDate);
     ERC20 token = ERC20(_tokenContract);
@@ -314,10 +313,13 @@ contract TimeLockedWallet {
     WithdrewTokens(_tokenContract, msg.sender, tokenBalance);
   }
   
+  function info() public view returns(address, address, uint, uint, uint) {
+    return (creator, owner, unlockDate, createdAt, this.balance);
+  }
+  
     event Received(address _from, uint _amount);
     event Withdrew(address _to, uint _amount);
-    event WithdrewTokens(address _tokenContract, address _to, uint _amount);
-  
+    event WithdrewTokens(address _tokenContract, address _to, uint _amount);  
 }
 
 contract TimeLockedWalletFactory {
