@@ -333,8 +333,7 @@ contract Factory {
     }
 }
 
-/// @title MyToken Factory - Allows creation of custom token.
-/// @author Nicolas frega - <nicolas.frega@srax.com>
+/// @title TokenMint - Allows creation of custom mintable token.
 
 contract TokenMint is Factory {
 
