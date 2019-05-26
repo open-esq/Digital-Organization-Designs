@@ -74,46 +74,6 @@ library SafeMath {
         return c;
     }
 }
-  /**
- * @title Ownable
- * @dev The Ownable contract has an owner address, and provides basic authorization control
- * functions, this simplifies the implementation of "user permissions".
- */
-contract Ownable {
-  address public owner;
-
-
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  function OwnableFunction() private {
-    owner = msg.sender;
-  }
-
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require(msg.sender == owner);
-    _;
-  }
-
-
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) public onlyOwner {
-    require(newOwner != address(0));
-    emit OwnershipTransferred(owner, newOwner);
-    owner = newOwner;
-}
-}
 
 /**
  * @title Standard ERC20 token
@@ -122,7 +82,7 @@ contract Ownable {
  * @dev https://github.com/ethereum/EIPs/issues/20
  * @dev Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
 */
-contract StandardToken is ERC20, Ownable {
+contract StandardToken is ERC20 {
     using SafeMath for uint256;
 
   mapping(address => uint256) balances;
@@ -224,8 +184,8 @@ contract StandardToken is ERC20, Ownable {
 }
  
  /**
- * @title Mintable token
- * @dev Simple ERC20 Token example, with mintable token creation
+ * @title Mintable Tribute Token
+ * @dev Simple ERC20 Token example, with mintable token creation and amendable tribute system
  * @dev Issue: * https://github.com/OpenZeppelin/zeppelin-solidity/issues/120
  * Based on code by TokenMarketNet: https://github.com/TokenMarketNet/ico/blob/master/contracts/MintableToken.sol
  */
@@ -266,16 +226,22 @@ constructor(string memory _symbol, string memory _name, uint _totalSupply, addre
     _;
   }
   
+  /**
+   * @dev Function to update tribute amount for guild token mint. 
+   */
   function updateTribute(uint _tribute) onlyOwner public {
     	tribute = _tribute;
 	}
-	
+    	
+  /**
+   * @dev Function to update guild address for tribute transfer. 
+   */	
   function updateGuild(address _guild) onlyOwner public {
     	guild = _guild;
 	}
   
   /**
-   * @dev Function to mint tokens
+   * @dev Function to mint new guild tokens after tribute attached.
    * @return A boolean that indicates if the operation was successful.
    */
   function mint() canMint payable public returns (bool) {
@@ -290,7 +256,7 @@ constructor(string memory _symbol, string memory _name, uint _totalSupply, addre
   }
 
   /**
-   * @dev Function to stop minting new tokens.
+   * @dev Function to stop minting new guild member tokens.
    * @return True if the operation was successful.
    */
   function finishMinting() onlyOwner canMint public returns (bool) {
@@ -299,6 +265,9 @@ constructor(string memory _symbol, string memory _name, uint _totalSupply, addre
     return true;
   }
   
+  /**
+   * @dev Function to transfer token ownership. 
+   */
   function transferOwnership(address newOwner) public onlyOwner {
     require(newOwner != address(0));
     emit OwnershipTransferred(owner, newOwner);
@@ -347,16 +316,20 @@ contract Factory {
     }
 }
 
-/// @title TokenMint - Allows creation of custom mintable token.
+/// @title TokenMint - Allows creation of custom mintable tribute tokens.
 
 contract TributeTokenMint is Factory {
 
     /*
      * Public functions
      */
-    /// @dev Allows verified creation of custom ERC20 token.
-    /// @param _name String for token name.
+    /// @dev Allows verified creation of custom ERC20 token with amendable tribute system.
     /// @param _symbol String for token symbol.
+    /// @param _name String for toke name.
+    /// @param _totalSupply Uint for initial token supply.
+    /// @param _owner Address for token owner.
+    /// @param _tribute Uint amendable tribute amount.
+    /// @param _guild Address amendable guild address for tribute transfer.
     /// @return Returns token address.
     function create(string memory _symbol, string memory _name, uint _totalSupply, address _owner, uint _tribute, address _guild)
         public
