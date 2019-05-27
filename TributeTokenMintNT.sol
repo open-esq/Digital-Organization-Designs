@@ -85,13 +85,13 @@ library SafeMath {
 contract StandardToken is ERC20 {
     using SafeMath for uint256;
     address private owner;
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event MintFinished();
+    
+    bool public mintingFinished = false;
 
   mapping(address => uint256) balances;
   
-  constructor() public {
-    	owner = msg.sender;
-  }
-
   modifier onlyOwner() {
     require(msg.sender == owner);
     _;
@@ -189,6 +189,30 @@ contract StandardToken is ERC20 {
       allowed[msg.sender][_spender] = oldValue.sub(_subtractedValue);
     }
     emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
+    return true;
+  }
+  
+    /**
+   * @dev Function to transfer token ownership. 
+   */
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    emit OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+  }
+  
+    modifier canMint() {
+    require(!mintingFinished);
+    _;
+  }
+  
+    /**
+   * @dev Function to stop minting new guild member tokens.
+   * @return True if the operation was successful.
+   */
+  function finishMinting() onlyOwner canMint public returns (bool) {
+    mintingFinished = true;
+    emit MintFinished();
     return true;
   }
 }
