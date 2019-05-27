@@ -352,7 +352,7 @@ contract Factory {
 
 /// @title TokenMint - Allows creation of custom mintable tribute tokens.
 
-contract TributeTokenMintNT is Factory {
+contract TributeTokenMint is Factory {
 
     /*
      * Public functions
