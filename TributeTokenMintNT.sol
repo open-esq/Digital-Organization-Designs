@@ -229,7 +229,7 @@ contract MintableTributeToken is StandardToken {
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
   string public symbol;
   string public name;
-  uint8 public decimals = 1;
+  uint8 public decimals;
   uint public totalSupply;
   address public owner;
   uint public tribute;
