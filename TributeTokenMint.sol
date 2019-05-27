@@ -84,8 +84,18 @@ library SafeMath {
 */
 contract StandardToken is ERC20 {
     using SafeMath for uint256;
+    address private owner;
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event MintFinished();
+    
+    bool public mintingFinished = false;
 
   mapping(address => uint256) balances;
+  
+  modifier onlyOwner() {
+    require(msg.sender == owner);
+    _;
+  }
 
   /**
   * @dev transfer token for a specified address
@@ -181,6 +191,30 @@ contract StandardToken is ERC20 {
     emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
     return true;
   }
+  
+    /**
+   * @dev Function to transfer token ownership. 
+   */
+  function transferOwnership(address newOwner) public onlyOwner {
+    require(newOwner != address(0));
+    emit OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+  }
+  
+    modifier canMint() {
+    require(!mintingFinished);
+    _;
+  }
+  
+    /**
+   * @dev Function to stop minting new guild member tokens.
+   * @return True if the operation was successful.
+   */
+  function finishMinting() onlyOwner canMint public returns (bool) {
+    mintingFinished = true;
+    emit MintFinished();
+    return true;
+  }
 }
  
  /**
@@ -195,7 +229,7 @@ contract MintableTributeToken is StandardToken {
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
   string public symbol;
   string public name;
-  uint8 public decimals = 1;
+  uint8 public decimals = 18;
   uint public totalSupply;
   address public owner;
   uint public tribute;
@@ -207,7 +241,7 @@ contract MintableTributeToken is StandardToken {
 constructor(string memory _symbol, string memory _name, uint _totalSupply, address _owner, uint _tribute, address _guild) public {
     	symbol = _symbol;
     	name = _name;
-    	decimals = 0;
+    	decimals = 18;
     	totalSupply = _totalSupply;
     	owner = _owner;
     	tribute = _tribute;
@@ -318,7 +352,7 @@ contract Factory {
 
 /// @title TokenMint - Allows creation of custom mintable tribute tokens.
 
-contract TributeTokenMint is Factory {
+contract TributeTokenMintNT is Factory {
 
     /*
      * Public functions
