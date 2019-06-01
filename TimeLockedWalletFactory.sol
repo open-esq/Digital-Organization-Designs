@@ -1,7 +1,3 @@
-/**
- * Source Code verified at https://rinkeby.etherscan.io/address/0xe47684d658872fbde11c82036099a12c066c4fa3#code on Tuesday, January 30, 2018
- (UTC) */
-
 pragma solidity ^0.4.18;
 
 
@@ -47,7 +43,7 @@ contract TimeLockedWallet {
 
     // keep all the ether sent to this address
     function() payable public { 
-        Received(msg.sender, msg.value);
+        emit Received(msg.sender, msg.value);
     }
 
     // callable by owner only, after specified time
@@ -55,7 +51,7 @@ contract TimeLockedWallet {
        require(now >= unlockDate);
        //now send all the balance
        msg.sender.transfer(this.balance);
-       Withdrew(msg.sender, this.balance);
+       emit Withdrew(msg.sender, this.balance);
     }
 
     // callable by owner only, after specified time, only for Tokens implementing ERC20
@@ -65,7 +61,7 @@ contract TimeLockedWallet {
        //now send all the token balance
        uint tokenBalance = token.balanceOf(this);
        token.transfer(owner, tokenBalance);
-       WithdrewTokens(_tokenContract, msg.sender, tokenBalance);
+       emit WithdrewTokens(_tokenContract, msg.sender, tokenBalance);
     }
 
     function info() public view returns(address, address, uint, uint, uint) {
@@ -109,7 +105,7 @@ contract TimeLockedWalletFactory {
         wallet.transfer(msg.value);
 
         // Emit event.
-        Created(wallet, msg.sender, _owner, now, _unlockDate, msg.value);
+        emit Created(wallet, msg.sender, _owner, now, _unlockDate, msg.value);
     }
 
     // Prevents accidental sending of ether to the factory
