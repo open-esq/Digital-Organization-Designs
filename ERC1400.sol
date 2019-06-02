@@ -1962,5 +1962,4 @@ contract ERC1400 is IERC1400, ERC1410, MinterRole {
 
     require(_remainingValue == 0, "A8: Transfer Blocked - Token restriction");
   }
-
 }
