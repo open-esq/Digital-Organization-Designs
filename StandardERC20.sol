@@ -627,16 +627,19 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
     string private _name;
     string private _symbol;
     uint8 private _decimals;
+    uint256 private _cap;
 
     /**
      * @dev Sets the values for `name`, `symbol`, and `decimals`. All three of
      * these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name, string memory symbol, uint8 decimals) public {
+    constructor (string memory name, string memory symbol, uint8 decimals, uint256 cap) public {
+        require(cap > 0, "ERC20Capped: cap is 0");
         _name = name;
         _symbol = symbol;
         _decimals = decimals;
+        _cap = cap;
     }
     
     /**
@@ -649,6 +652,18 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
     function mint(address account, uint256 amount) public onlyMinter returns (bool) {
         _mint(account, amount);
         return true;
+    }
+    
+    /**
+     * @dev See `ERC20Mintable.mint`.
+     *
+     * Requirements:
+     *
+     * - `value` must not cause the total supply to go over the cap.
+     */
+    function _mint(address account, uint256 value) internal {
+        require(totalSupply().add(value) <= _cap, "ERC20Capped: cap exceeded");
+        super._mint(account, value);
     }
 
     /**
@@ -680,5 +695,12 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
      */
     function decimals() public view returns (uint8) {
         return _decimals;
+    }
+    
+    /**
+     * @dev Returns the cap on the token's total supply.
+     */
+    function cap() public view returns (uint256) {
+        return _cap;
     }
 }
