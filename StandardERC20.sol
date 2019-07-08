@@ -369,11 +369,11 @@ interface IERC20 {
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
-    mapping (address => uint256) private _balances;
+    mapping (address => uint256) internal _balances;
 
-    mapping (address => mapping (address => uint256)) private _allowances;
+    mapping (address => mapping (address => uint256)) internal _allowances;
 
-    uint256 private _totalSupply;
+    uint256 internal _totalSupply;
 
     /**
      * @dev See `IERC20.totalSupply`.
@@ -634,12 +634,14 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
      * these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name, string memory symbol, uint8 decimals, uint256 cap) public {
+    constructor (string memory name, string memory symbol, uint8 decimals, uint256 cap, uint256 init) public {
         require(cap > 0, "ERC20Capped: cap is 0");
         _name = name;
         _symbol = symbol;
         _decimals = decimals;
         _cap = cap;
+        _balances[msg.sender] = init; //provides initial deposit to deployer
+        _totalSupply = init; //initializes totalSupply with initial deposit
     }
     
     /**
