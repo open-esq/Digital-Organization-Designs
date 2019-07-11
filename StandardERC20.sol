@@ -739,7 +739,7 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
     uint256 private _cap;
 
     /**
-     * @dev Sets the values for `name`, `symbol`, and `decimals`. All three of
+     * @dev Sets the values for `name`, `symbol`, `decimals`, `cap` and 'init'. All five of
      * these values are immutable: they can only be set once during
      * construction.
      */
