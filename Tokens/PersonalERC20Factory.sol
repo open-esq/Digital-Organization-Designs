@@ -26,11 +26,11 @@ contract PersonalERC20Factory {
 
   // deploy a new contract
 
-  function newPersonalERC20(string memory name, string memory symbol, uint256 init, uint256 cap, address owner)
+  function newPersonalERC20(string memory name, string memory symbol, uint256 init, address owner)
     public
     returns(address)
   {
-    PersonalERC20 c = new PersonalERC20(name, symbol, init, cap, owner);
+    PersonalERC20 c = new PersonalERC20(name, symbol, init, owner);
     validContracts[c] = true;
     contracts.push(c);
     return c;
@@ -656,24 +656,21 @@ contract PersonalERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
     string private _name;
     string private _symbol;
     uint8 private _decimals;
-    uint256 private _cap;
     address private _owner;
 
     /**
-     * @dev Sets the values for `name`, `symbol`, 'init', 'cap', 'owner'. All five of
+     * @dev Sets the values for `name`, `symbol`, 'init', 'owner'. All four of
      * these values are immutable: they can only be set once during
      * construction. Decimals are defaulted to '18', per ERC20 norms, imitating 
      * the relationship between Ether and Wei.
      */
-    constructor (string memory name, string memory symbol, uint256 init, uint256 cap, address owner) public {
-        require(cap > 0, "ERC20Capped: cap is 0");
+    constructor (string memory name, string memory symbol, uint256 init, address owner) public {
         _name = name;
         _symbol = symbol;
         _decimals = 18;
-        _cap = cap;
         _owner = owner;
-        _balances[_owner] = init; //provides initial deposit to owner set by constructor
-        _totalSupply = init; //initializes totalSupply with initial deposit
+        _balances[_owner] = init; // provides initial deposit to owner set by constructor
+        _totalSupply = init; // initializes totalSupply with initial deposit
         _addMinter(_owner);
         _addPauser(_owner);
         emit Transfer(address(0), _owner, _totalSupply);
@@ -691,18 +688,6 @@ contract PersonalERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
         return true;
     }
     
-    /**
-     * @dev See `ERC20Mintable.mint`.
-     *
-     * Requirements:
-     *
-     * - `value` must not cause the total supply to go over the cap.
-     */
-    function _mint(address account, uint256 value) internal {
-        require(totalSupply().add(value) <= _cap, "ERC20Capped: cap exceeded");
-        super._mint(account, value);
-    }
-
     /**
      * @dev Returns the name of the token.
      */
@@ -732,13 +717,6 @@ contract PersonalERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
      */
     function decimals() public view returns (uint8) {
         return _decimals;
-    }
-    
-    /**
-     * @dev Returns the cap on the token's total supply.
-     */
-    function cap() public view returns (uint256) {
-        return _cap;
     }
     
     /**
