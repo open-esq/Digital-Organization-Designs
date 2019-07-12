@@ -661,7 +661,7 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
     address private _owner;
 
     /**
-     * @dev Sets the values for `name`, `symbol`, and `decimals`. All three of
+     * @dev Sets the values for `name`, `symbol`, `decimals`, `cap`, 'init', 'owner'. All six of
      * these values are immutable: they can only be set once during
      * construction.
      */
