@@ -653,11 +653,11 @@ contract ERC20Pausable is ERC20, Pausable {
  * @dev Extension of ERC20 standard designed for simple 'personal token' deployments.
  */
 contract PersonalERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
-    string public _name;
-    string public _symbol;
-    uint8 public _decimals;
-    uint256 public _cap;
-    address public _owner;
+    string private _name;
+    string private _symbol;
+    uint8 private _decimals;
+    uint256 private _cap;
+    address private _owner;
 
     /**
      * @dev Sets the values for `name`, `symbol`, 'init', 'cap', 'owner'. All five of
@@ -676,6 +676,7 @@ contract PersonalERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
         _totalSupply = init; //initializes totalSupply with initial deposit
         _addMinter(_owner);
         _addPauser(_owner);
+        emit Transfer(address(0), _owner, _totalSupply);
     }
     
     /**
