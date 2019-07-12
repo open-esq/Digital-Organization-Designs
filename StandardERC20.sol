@@ -743,7 +743,7 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
      * these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name, string memory symbol, uint8 decimals, uint256 cap, uint256 init) public {
+    constructor (string memory name, string memory symbol, uint8 decimals, uint256 init, uint256 cap) public {
         require(cap > 0, "ERC20Capped: cap is 0");
         _name = name;
         _symbol = symbol;
