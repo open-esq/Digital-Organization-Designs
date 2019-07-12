@@ -26,11 +26,11 @@ contract StandardERC20Factory {
 
   // deploy a new contract
 
-  function newStandardERC20(string memory name, string memory symbol, uint8 decimals, uint256 cap, uint256 init, address owner)
+  function newStandardERC20(string memory name, string memory symbol, uint8 decimals, uint256 init, uint256 cap, address owner)
     public
     returns(address)
   {
-    StandardERC20 c = new StandardERC20(name, symbol, decimals, cap, init, owner);
+    StandardERC20 c = new StandardERC20(name, symbol, decimals, init, cap, owner);
     validContracts[c] = true;
     contracts.push(c);
     return c;
@@ -665,7 +665,7 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
      * these values are immutable: they can only be set once during
      * construction.
      */
-    constructor (string memory name, string memory symbol, uint8 decimals, uint256 cap, uint256 init, address owner) public {
+    constructor (string memory name, string memory symbol, uint8 decimals, uint256 init, uint256 cap, address owner) public {
         require(cap > 0, "ERC20Capped: cap is 0");
         _name = name;
         _symbol = symbol;
