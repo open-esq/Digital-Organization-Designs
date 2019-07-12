@@ -17,7 +17,7 @@ contract StandardERC20Factory {
     return contracts.length;
   }
 
-  //get all contracts
+  // get all contracts
 
   function getDeployedContracts() public view returns (address[] memory)
   {
