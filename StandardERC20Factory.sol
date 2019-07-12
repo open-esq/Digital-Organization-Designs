@@ -739,4 +739,11 @@ contract StandardERC20 is MinterRole, ERC20Burnable, ERC20Pausable {
     function cap() public view returns (uint256) {
         return _cap;
     }
+    
+     /**
+     * @dev Returns the token's initial owner.
+     */
+    function owner() public view returns (address) {
+        return _owner;
+    }
 }
