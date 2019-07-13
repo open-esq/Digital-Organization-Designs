@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at Etherscan.io on 2017-10-21
-*/
-
 pragma solidity ^0.4.18;
 contract Token {
     function transfer(address _to, uint _value) public returns (bool success);
