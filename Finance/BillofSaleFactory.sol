@@ -192,9 +192,9 @@ contract BillOfSale {
 		 * Ether 'price' is transferred to seller.
                  */
 	        function confirmReceipt() public onlyBuyer inState(State.Confirmed) {
-	             state = State.Complete;
+	             state = State.Completed;
 	             seller.transfer(address(this).balance);
-	             emit Received(address(this), seller);
+	             emit Completed(address(this), seller);
 	             }
 	        /**
                  * @dev Buyer or seller can initiate dispute related to locked Ether 'price' after buyer confirms purchase,
@@ -217,7 +217,7 @@ contract BillOfSale {
 	            buyer.transfer(buyerAward);
 	            seller.transfer(sellerAward);
 	            arbiter.transfer(arbiterFee);
-                    emit Completed(address(this), buyer, seller);
+                    emit Resolved(address(this), buyer, seller);
                     }
 }
 
