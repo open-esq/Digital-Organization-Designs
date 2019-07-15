@@ -16,16 +16,16 @@ contract BillOfSale {
 	constructor(
 	    string memory _descr, 
 	    uint256 _price,
-    	address _seller, 
-    	address _buyer,
-    	address _arbiter) 
-    	    public {
-    	            descr = _descr;
-            	    price = _price;
-            	    seller = _seller;
-            	    buyer = _buyer;
-            	    arbiter = _arbiter;
-	                 }
+    	    address _seller, 
+    	    address _buyer,
+    	    address _arbiter) 
+    	     public {
+    	             descr = _descr;
+            	     price = _price;
+            	     seller = _seller;
+            	     buyer = _buyer;
+            	     arbiter = _arbiter;
+	                  }
                      /**
                       * @dev Throws if called by any account other than the buyer.
                       */
