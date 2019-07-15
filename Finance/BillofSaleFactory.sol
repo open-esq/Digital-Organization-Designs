@@ -105,87 +105,120 @@ library SafeMath {
         return a % b;
     }
 }
-
+/**
+ * @dev Ether Escrow legible as Bill of Sale with arbitration procedure.
+ */
 contract BillOfSale {
     using SafeMath for uint256;
     
     address public buyer;
-	address public seller;
-	address public arbiter;
-	string public descr;
-	uint256 public price;
+    address public seller;
+    address public arbiter;
+    string public descr;
+    uint256 public price;
 	
-	uint256 private arbiterFee;
-	uint256 private buyerAward;
+    uint256 private arbiterFee;
+    uint256 private buyerAward;
     uint256 private sellerAward;
 	
-	enum State { Created, Confirmed, Disputed, Resolved, Complete }
-	State public state;
+    enum State { Created, Confirmed, Disputed, Resolved, Completed }
+    State public state;
 	
-	event Confirmed(address indexed buyer, address indexed this);
-	event Disputed();
-	event Resolved(address indexed this, address indexed buyer, address indexed seller);
-	event Received(address indexed this, address indexed seller);
-	
-	constructor(
-	    string memory _descr, 
+    event Confirmed(address indexed buyer, address indexed this);
+    event Disputed();
+    event Resolved(address indexed this, address indexed buyer, address indexed seller);
+    event Completed(address indexed this, address indexed seller);
+/**
+ * @dev Sets the transaction values for `descr`, `price`, `buyer`, `seller`, 'arbiter', 'arbiterFee'. All six of
+ * these values are immutable: they can only be set once during construction and reflect essential deal terms.
+ */	
+    constructor(
+        string memory _descr, 
 	    uint256 _price,
 	    address _buyer,
     	address _seller, 
     	address _arbiter,
     	uint256 _arbiterFee) 
-    	    public {
-    	            descr = _descr;
-            	    price = _price;
-            	    seller = _seller;
-            	    buyer = _buyer;
-            	    arbiter = _arbiter;
-            	    arbiterFee = _arbiterFee;
-	                 }
-                     /**
-                      * @dev Throws if called by any account other than the buyer.
-                      */
-                        modifier onlyBuyer() {
+    	public {
+    	        descr = _descr;
+            	price = _price;
+            	seller = _seller;
+            	buyer = _buyer;
+            	arbiter = _arbiter;
+            	arbiterFee = _arbiterFee;
+	        }
+                /**
+                 * @dev Throws if called by any account other than buyer.
+                 */
+                  modifier onlyBuyer() {
                         require(msg.sender == buyer);
                          _;
-                           }
-                        modifier onlyBuyerOrSeller() {
+                        }
+		/**
+                 * @dev Throws if called by any account other than buyer or seller.
+                 */
+                  modifier onlyBuyerOrSeller() {
                         require(
                         msg.sender == buyer ||
                         msg.sender == seller);
                          _;
-                           }
-                        modifier onlyArbiter() {
+                        }
+		/**
+                 * @dev Throws if called by any account other than arbiter.
+                 */
+                  modifier onlyArbiter() {
                         require(msg.sender == arbiter);
                          _;
-                           }
-	                    modifier inState(State _state) {
+                        }
+		/**
+                 * @dev Throws if contract called in State other than one associated for function.
+                 */
+	          modifier inState(State _state) {
     	                require(state == _state);
                     	 _;
-	                       }
-	                        function confirmPurchase() public payable onlyBuyer inState(State.Created) {
-    	                      require(price == msg.value);
-    	                      state = State.Confirmed;
-    	                      emit Confirmed(buyer, address(this));
-	                        }
-	                        function confirmReceipt() public onlyBuyer inState(State.Confirmed) {
-	                          state = State.Complete;
-	                          seller.transfer(address(this).balance);
-	                          emit Received(address(this), seller);
-	                        }
-	                        function initiateDispute() public onlyBuyerOrSeller inState(State.Confirmed) {
-	                          state = State.Disputed;
-    	                      emit Disputed();
-                            }
-                            function resolveDispute(uint256 _buyerAward, uint256 _sellerAward) public onlyArbiter inState(State.Disputed) {
-	                          state = State.Resolved;
-	                          buyerAward = _buyerAward;
-	                          sellerAward = _sellerAward;
-	                          buyer.transfer(buyerAward);
-	                          seller.transfer(sellerAward);
-	                          arbiter.transfer(arbiterFee);
-                              emit Resolved(address(this), buyer, seller);
-                            }
+	                }
+		/**
+                 * @dev Buyer confirms transaction with Ether 'price' as message value;
+		 * Ether is then locked for transfer to seller after buyer confirms receipt 
+		 * or ADR if dispute initiated by buyer or seller.
+                 */
+	        function confirmPurchase() public payable onlyBuyer inState(State.Created) {
+    	            require(price == msg.value);
+    	            state = State.Confirmed;
+    	            emit Confirmed(buyer, address(this));
+	            }
+		/**
+                 * @dev Buyer confirms receipt from seller;
+		 * Ether 'price' is transferred to seller.
+                 */
+	        function confirmReceipt() public onlyBuyer inState(State.Confirmed) {
+	             state = State.Complete;
+	             seller.transfer(address(this).balance);
+	             emit Received(address(this), seller);
+	             }
+	        /**
+                 * @dev Buyer or seller can initiate dispute related to locked Ether 'price' after buyer confirms purchase,
+		 * placing 'price' transfer and split of value into arbiter control.
+		 * For example, buyer might refuse or unduly delay to confirm receipt after seller transaction, or, on other hand,
+		 * despite buyer's disatisfaction with seller transaction, seller might demand buyer confirm receipt and release 'price'.
+                 */
+	        function initiateDispute() public onlyBuyerOrSeller inState(State.Confirmed) {
+	            state = State.Disputed;
+    	            emit Disputed();
+                    }
+	        /**
+                 * @dev Arbiter can resolve dispute and claim reward by entering in split of 'price' value 
+		 * minus their 'arbiter fee' set at construction.
+                 */
+                function resolveDispute(uint256 _buyerAward, uint256 _sellerAward) public onlyArbiter inState(State.Disputed) {
+	            state = State.Resolved;
+	            buyerAward = _buyerAward;
+	            sellerAward = _sellerAward;
+	            buyer.transfer(buyerAward);
+	            seller.transfer(sellerAward);
+	            arbiter.transfer(arbiterFee);
+                    emit Completed(address(this), buyer, seller);
+                    }
 }
 
 contract BillOfSaleFactory {
@@ -216,7 +249,7 @@ contract BillOfSaleFactory {
 
   function newBillOfSale(
       string memory _descr, 
-	  uint256 _price,
+      uint256 _price,
       address _buyer,
       address _seller, 
       address _arbiter,
