@@ -115,6 +115,7 @@ contract BillOfSale {
 	string public descr;
 	uint256 public price;
 	
+	uint256 private arbiterFee;
 	uint256 private buyerAward;
     uint256 private sellerAward;
 	
@@ -131,13 +132,15 @@ contract BillOfSale {
 	    uint256 _price,
 	    address _buyer,
     	address _seller, 
-    	address _arbiter) 
+    	address _arbiter,
+    	uint256 _arbiterFee) 
     	    public {
     	            descr = _descr;
             	    price = _price;
             	    seller = _seller;
             	    buyer = _buyer;
             	    arbiter = _arbiter;
+            	    arbiterFee = _arbiterFee;
 	                 }
                      /**
                       * @dev Throws if called by any account other than the buyer.
@@ -180,6 +183,7 @@ contract BillOfSale {
 	                          sellerAward = _sellerAward;
 	                          buyer.transfer(buyerAward);
 	                          seller.transfer(sellerAward);
+	                          arbiter.transfer(arbiterFee);
                               emit Resolved(address(this), buyer, seller);
                             }
 }
