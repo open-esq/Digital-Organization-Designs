@@ -119,6 +119,7 @@ contract ERC20 {
 }
 /**
  * @dev ERC20 Token Escrow legible as Bill of Sale with Arbitration logic.
+ * @author R. Ross Campbell
  */
 contract BillOfSaleERC20 {
     using SafeMath for uint256;
