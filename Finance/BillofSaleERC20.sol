@@ -121,7 +121,7 @@ contract ERC20 {
  * @dev ERC20 Token Escrow legible as Bill of Sale with Arbitration logic.
  * @author R. Ross Campbell
  */
-contract BillOfSaleERC20 {
+contract BillofSaleERC20 {
     using SafeMath for uint256;
     
     string public descr;
@@ -132,8 +132,6 @@ contract BillOfSaleERC20 {
     address public arbiter;
     uint256 public createdAt;
     
-    uint256 private buyerAward;
-    uint256 private sellerAward;
     uint256 private arbiterFee;
     
     enum State { Created, Confirmed, Disputed, Resolved }
@@ -223,11 +221,9 @@ contract BillOfSaleERC20 {
          * @dev Arbiter can resolve dispute and claim token reward by entering in split of 'price' value,
          * minus 'arbiter fee' set at construction.
          */
-           function resolveDispute(uint256 _buyerAward, uint256 _sellerAward) public onlyArbiter inState(State.Disputed) {
+           function resolveDispute(uint256 buyerAward, uint256 sellerAward) public onlyArbiter inState(State.Disputed) {
                 state = State.Resolved;
                 ERC20 token = ERC20(tokenContract);
-                buyerAward = _buyerAward;
-                sellerAward = _sellerAward;
                 token.transfer(buyer, buyerAward);
                 token.transfer(seller, sellerAward);
                 token.transfer(arbiter, arbiterFee);
@@ -235,3 +231,53 @@ contract BillOfSaleERC20 {
                 }
 }
 
+contract BillofSaleERC20Factory {
+
+  // index of created contracts
+
+  mapping (address => bool) public validContracts; 
+  address[] public contracts;
+
+  // useful to know the row count in contracts index
+
+  function getContractCount() 
+    public
+    view
+    returns(uint contractCount)
+  {
+    return contracts.length;
+  }
+
+  // get all contracts
+
+  function getDeployedContracts() public view returns (address[] memory)
+  {
+    return contracts;
+  }
+
+  // deploy a new contract
+
+  function newBillofSaleERC20(
+      string memory _descr, 
+      uint256 _price,
+      address _tokenContract,
+      address _buyer,
+      address _seller, 
+      address _arbiter,
+      uint256 _arbiterFee)
+          public
+          returns(address)
+   {
+    BillofSaleERC20 c = new BillofSaleERC20(
+        _descr, 
+        _price,
+        _tokenContract,
+        _buyer, 
+        _seller,
+        _arbiter,
+        _arbiterFee);
+            validContracts[c] = true;
+            contracts.push(c);
+            return c;
+    }
+}
