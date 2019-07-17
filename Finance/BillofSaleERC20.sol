@@ -124,21 +124,22 @@ contract ERC20 {
 }
 
 /**
- * @dev Escrow legible as Bill of Sale with arbitration procedure.
+ * @dev ERC20 Token Escrow legible as Bill of Sale with Arbitration logic.
  */
-contract BillOfSale {
+contract BillOfSaleERC20 {
     using SafeMath for uint256;
     
     string public descr;
     uint256 public price;
+    address public tokenContract;
     address public buyer;
     address public seller;
     address public arbiter;
     uint256 public createdAt;
     
-    uint256 private arbiterFee;
     uint256 private buyerAward;
     uint256 private sellerAward;
+    uint256 private arbiterFee;
     
     enum State { Created, Confirmed, Disputed, Resolved }
     State public state;
@@ -146,13 +147,15 @@ contract BillOfSale {
     event Confirmed(address indexed this, address indexed seller);
     event Disputed();
     event Resolved(address indexed this, address indexed buyer, address indexed seller);
+
 /**
- * @dev Sets the transaction values for `descr`, `price`, `buyer`, `seller`, 'arbiter', 'arbiterFee'. All six of
+ * @dev Sets the BOS transaction values for `descr`, `price`, 'tokenContract', `buyer`, `seller`, 'arbiter', 'arbiterFee'. All seven of
  * these values are immutable: they can only be set once during construction and reflect essential deal terms.
  */    
-    constructor(
+   constructor(
         string memory _descr,
         uint256 _price,
+        address _tokenContract,
         address _buyer,
         address _seller,
         address _arbiter,
@@ -160,13 +163,14 @@ contract BillOfSale {
         public {
                 descr = _descr;
                 price = _price;
+                tokenContract = _tokenContract;
                 buyer = _buyer;
                 seller = _seller;
                 arbiter = _arbiter;
                 arbiterFee = _arbiterFee;
                 createdAt = now;
                 require(price > arbiterFee, "arbiter fee cannot exceed price");
-            }
+               }
                 /**
                  * @dev Throws if called by any account other than buyer.
                  */
@@ -174,7 +178,7 @@ contract BillOfSale {
                         require(msg.sender == buyer);
                          _;
                         }
-        /**
+                /**
                  * @dev Throws if called by any account other than buyer or seller.
                  */
                   modifier onlyBuyerOrSeller() {
@@ -183,52 +187,57 @@ contract BillOfSale {
                         msg.sender == seller);
                          _;
                         }
-        /**
+                /**
                  * @dev Throws if called by any account other than arbiter.
                  */
                   modifier onlyArbiter() {
                         require(msg.sender == arbiter);
                          _;
                         }
-        /**
+                /**
                  * @dev Throws if contract called in State other than one associated for function.
                  */
-              modifier inState(State _state) {
+                  modifier inState(State _state) {
                         require(state == _state);
                          _;
-                    }
-                 /* @dev Buyer confirms receipt from seller;
-         * Token 'price' is transferred to seller.
-                 */
-            function confirmReceipt(address _tokenContract) public onlyBuyer inState(State.Created) {
-                 state = State.Confirmed;
-                 ERC20 token = ERC20(_tokenContract);
-                 uint256 tokenBalance = token.balanceOf(this);
-                 token.transfer(seller, tokenBalance);
-                 emit Confirmed(address(this), seller);
-                 }
-            /**
-                 * @dev Buyer or seller can initiate dispute related to locked Ether 'price' after buyer confirms purchase,
+                        }
+        /** 
+         * @dev Buyer confirms receipt from seller;
+         * token 'price' is transferred to seller.
+         * (presuming buyer deposits to BOS escrow to motivate seller delivery)
+         */
+           function confirmReceipt() public onlyBuyer inState(State.Created) {
+                state = State.Confirmed;
+                ERC20 token = ERC20(tokenContract);
+                uint256 tokenBalance = token.balanceOf(this);
+                token.transfer(seller, tokenBalance);
+                emit Confirmed(address(this), seller);
+                }
+        /**
+         * @dev Buyer or seller can initiate dispute related to BOS transaction,
          * placing 'price' transfer and split of value into arbiter control.
-         * For example, buyer might refuse or unduly delay to confirm receipt after seller transaction, or, on other hand,
-         * despite buyer's disatisfaction with seller transaction, seller might demand buyer confirm receipt and release 'price'.
-                 */
-            function initiateDispute() public onlyBuyerOrSeller inState(State.Created) {
+         * For example, buyer might refuse or unduly delay to confirm receipt after seller delivery, 
+         * or, on other hand,
+         * despite buyer's disatisfaction with seller delivery, 
+         * seller might demand buyer confirm receipt and release 'price'.
+         */
+           function initiateDispute() public onlyBuyerOrSeller inState(State.Created) {
                 state = State.Disputed;
-                    emit Disputed();
-                    }
-            /**
-                 * @dev Arbiter can resolve dispute and claim reward by entering in split of 'price' value
-         * minus their 'arbiter fee' set at construction.
-                 */
-                function resolveDispute(address _tokenContract, uint256 _buyerAward, uint256 _sellerAward) public onlyArbiter inState(State.Disputed) {
+                emit Disputed();
+                }
+        /**
+         * @dev Arbiter can resolve dispute and claim token reward by entering in split of 'price' value,
+         * minus 'arbiter fee' set at construction.
+         */
+           function resolveDispute(uint256 _buyerAward, uint256 _sellerAward) public onlyArbiter inState(State.Disputed) {
                 state = State.Resolved;
-                ERC20 token = ERC20(_tokenContract);
+                ERC20 token = ERC20(tokenContract);
                 buyerAward = _buyerAward;
                 sellerAward = _sellerAward;
                 token.transfer(buyer, buyerAward);
                 token.transfer(seller, sellerAward);
                 token.transfer(arbiter, arbiterFee);
                 emit Resolved(address(this), buyer, seller);
-                    }
+                }
 }
+
