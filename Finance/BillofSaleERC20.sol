@@ -29,7 +29,6 @@ library SafeMath {
 
         return c;
     }
-
     /**
      * @dev Returns the subtraction of two unsigned integers, reverting on
      * overflow (when the result is negative).
@@ -45,7 +44,6 @@ library SafeMath {
 
         return c;
     }
-
     /**
      * @dev Returns the multiplication of two unsigned integers, reverting on
      * overflow.
@@ -68,7 +66,6 @@ library SafeMath {
 
         return c;
     }
-
     /**
      * @dev Returns the integer division of two unsigned integers. Reverts on
      * division by zero. The result is rounded towards zero.
@@ -88,7 +85,6 @@ library SafeMath {
 
         return c;
     }
-
     /**
      * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
      * Reverts when dividing by zero.
@@ -105,7 +101,6 @@ library SafeMath {
         return a % b;
     }
 }
-
 /**
  * @title ERC20
  * @dev see https://github.com/ethereum/EIPs/issues/20
@@ -122,7 +117,6 @@ contract ERC20 {
   event Approval(address indexed owner, address indexed spender, uint256 value);
   event Transfer(address indexed from, address indexed to, uint256 value);
 }
-
 /**
  * @dev ERC20 Token Escrow legible as Bill of Sale with Arbitration logic.
  */
@@ -147,7 +141,6 @@ contract BillOfSaleERC20 {
     event Confirmed(address indexed this, address indexed seller);
     event Disputed();
     event Resolved(address indexed this, address indexed buyer, address indexed seller);
-
 /**
  * @dev Sets the BOS transaction values for `descr`, `price`, 'tokenContract', `buyer`, `seller`, 'arbiter', 'arbiterFee'. All seven of
  * these values are immutable: they can only be set once during construction and reflect essential deal terms.
