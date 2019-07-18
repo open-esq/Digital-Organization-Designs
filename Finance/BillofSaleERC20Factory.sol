@@ -132,8 +132,6 @@ contract BillofSaleERC20 {
     address public arbiter;
     uint256 public createdAt;
     
-    uint256 private buyerAward;
-    uint256 private sellerAward;
     uint256 private arbiterFee;
     
     enum State { Created, Confirmed, Disputed, Resolved }
@@ -223,11 +221,9 @@ contract BillofSaleERC20 {
          * @dev Arbiter can resolve dispute and claim token reward by entering in split of 'price' value,
          * minus 'arbiter fee' set at construction.
          */
-           function resolveDispute(uint256 _buyerAward, uint256 _sellerAward) public onlyArbiter inState(State.Disputed) {
+           function resolveDispute(uint256 buyerAward, uint256 sellerAward) public onlyArbiter inState(State.Disputed) {
                 state = State.Resolved;
                 ERC20 token = ERC20(tokenContract);
-                buyerAward = _buyerAward;
-                sellerAward = _sellerAward;
                 token.transfer(buyer, buyerAward);
                 token.transfer(seller, sellerAward);
                 token.transfer(arbiter, arbiterFee);
