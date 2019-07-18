@@ -210,7 +210,7 @@ contract BillofSaleERC20 {
          * placing 'price' transfer and split of value into arbiter control.
          * For example, buyer might refuse or unduly delay to confirm receipt after seller delivery, 
          * or, on other hand,
-         * despite buyer's disatisfaction with seller delivery, 
+         * despite buyer's dissatisfaction with seller delivery, 
          * seller might demand buyer confirm receipt and release 'price'.
          */
            function initiateDispute() public onlyBuyerOrSeller inState(State.Created) {
