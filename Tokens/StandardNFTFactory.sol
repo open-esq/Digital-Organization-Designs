@@ -695,7 +695,7 @@ contract ERC721Metadata is ERC165, ERC721, IERC721Metadata {
     address private _owner;
 
     // Optional mapping for token URIs
-    mapping(uint256 => string) private _tokenURIs;
+    mapping(uint256 => string) public _tokenURIs;
 
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
     /**
@@ -711,6 +711,7 @@ contract ERC721Metadata is ERC165, ERC721, IERC721Metadata {
     constructor (string memory name, string memory symbol) public {
         _name = name;
         _symbol = symbol;
+       
 
         // register the supported interfaces to conform to ERC721 via ERC165
         _registerInterface(_INTERFACE_ID_ERC721_METADATA);
@@ -771,18 +772,6 @@ contract ERC721Metadata is ERC165, ERC721, IERC721Metadata {
 }
 
 /**
- * @title Full ERC721 Token
- * This implementation includes all the required and some optional functionality of the ERC721 standard
- * Moreover, it includes approve all functionality using operator terminology
- * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
- */
-contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
-    constructor (string memory name, string memory symbol, address owner) public ERC721Metadata(name, symbol) {
-        // solhint-disable-previous-line no-empty-blocks
-    }
-}
-
-/**
  * @title Roles
  * @dev Library for managing addresses assigned to a Role.
  */
@@ -828,10 +817,6 @@ contract MinterRole {
     event MinterRemoved(address indexed account);
 
     Roles.Role private _minters;
-
-    constructor () internal {
-        _addMinter(msg.sender);
-    }
 
     modifier onlyMinter() {
         require(isMinter(msg.sender));
@@ -912,89 +897,32 @@ contract ERC721Burnable is ERC721 {
     }
 }
 
-/**
- * @title Ownable
- * @dev The Ownable contract has an owner address, and provides basic authorization control
- * functions, this simplifies the implementation of "user permissions".
- */
-contract Ownable {
-    address private _owner;
-
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-    /**
-     * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-     * account.
-     */
-    constructor () internal {
-        _owner = msg.sender;
-        emit OwnershipTransferred(address(0), _owner);
+contract StandardNFT is ERC721, ERC721Enumerable, ERC721Metadata, ERC721Mintable, ERC721MetadataMintable, ERC721Burnable {
+    using SafeMath for uint256;
+    address private owner;
+    
+    constructor (string memory name, string memory symbol, address _owner) ERC721Metadata(name, symbol) public
+         {
+            owner = _owner;
+            _addMinter(_owner);
+            _mint(_owner, 0);
+          
     }
-
-    /**
-     * @return the address of the owner.
-     */
-    function owner() public view returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(isOwner());
-        _;
-    }
-
+    
     /**
      * @return true if `msg.sender` is the owner of the contract.
      */
     function isOwner() public view returns (bool) {
-        return msg.sender == _owner;
+        return msg.sender == owner;
     }
-
-    /**
-     * @dev Allows the current owner to relinquish control of the contract.
-     * @notice Renouncing to ownership will leave the contract without an owner.
-     * It will not be possible to call the functions with the `onlyOwner`
-     * modifier anymore.
-     */
-    function renounceOwnership() public onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
-
-    /**
-     * @dev Allows the current owner to transfer control of the contract to a newOwner.
-     * @param newOwner The address to transfer ownership to.
-     */
-    function transferOwnership(address newOwner) public onlyOwner {
-        _transferOwnership(newOwner);
-    }
-
-    /**
-     * @dev Transfers control of the contract to a newOwner.
-     * @param newOwner The address to transfer ownership to.
-     */
-    function _transferOwnership(address newOwner) internal {
-        require(newOwner != address(0));
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
-    }
-}
-
-contract StandardNFT is ERC721Full, ERC721Mintable, ERC721MetadataMintable, ERC721Burnable, Ownable {
-    using SafeMath for uint256;
     
-    constructor (string memory _name, string memory _symbol, address _owner) public
-        ERC721Mintable()
-        ERC721Full(_name, _symbol, _owner){
-    }
-
-    function mintUniqueTokenTo(address _to, uint256 _tokenId, string memory _tokenURI) public onlyOwner{
-        _mint(_to, _tokenId); // token 
-        _setTokenURI(_tokenId, _tokenURI); // token metadata add
-    }
+    /**
+      * @dev Throws if called by any account other than buyer.
+      */
+       modifier onlyOwner() {
+                require(msg.sender == owner);
+                _;
+                    }
 
     //token
     function transfer(address _to, uint256 _tokenId) public {
