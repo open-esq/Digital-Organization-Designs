@@ -899,32 +899,13 @@ contract ERC721Burnable is ERC721 {
 
 contract StandardNFT is ERC721, ERC721Enumerable, ERC721Metadata, ERC721Mintable, ERC721MetadataMintable, ERC721Burnable {
     using SafeMath for uint256;
-    address private owner;
     
-    constructor (string memory name, string memory symbol, address _owner) ERC721Metadata(name, symbol) public
-         {
-            owner = _owner;
-            _addMinter(_owner);
-            _mint(_owner, 0);
-          
+    constructor (string memory name, string memory symbol, address minter) ERC721Metadata(name, symbol) public {
+            _addMinter(minter);
+            _mint(minter, 0);
     }
     
-    /**
-     * @return true if `msg.sender` is the owner of the contract.
-     */
-    function isOwner() public view returns (bool) {
-        return msg.sender == owner;
-    }
-    
-    /**
-      * @dev Throws if called by any account other than buyer.
-      */
-       modifier onlyOwner() {
-                require(msg.sender == owner);
-                _;
-                    }
-
-    //token
+    //token transfers
     function transfer(address _to, uint256 _tokenId) public {
         safeTransferFrom(msg.sender, _to, _tokenId);
     }
@@ -958,11 +939,11 @@ contract StandardNFTFactory {
         return contracts.length;
     }
 
-    function newStandardNFT(string memory _name, string memory _symbol, address _owner)
+    function newStandardNFT(string memory name, string memory symbol, address minter)
         public
         returns(address newContract)
     {
-        StandardNFT c = new StandardNFT(_name, _symbol, _owner);
+        StandardNFT c = new StandardNFT(name, symbol, minter);
         contracts.push(c);
         lastContractAddress = address(c);
         return c;
