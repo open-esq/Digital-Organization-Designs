@@ -164,112 +164,6 @@ contract MinterRole {
     }
 }
 
-contract PauserRole {
-    using Roles for Roles.Role;
-
-    event PauserAdded(address indexed account);
-    event PauserRemoved(address indexed account);
-
-    Roles.Role private _pausers;
-
-    modifier onlyPauser() {
-        require(isPauser(msg.sender), "PauserRole: caller does not have the Pauser role");
-        _;
-    }
-
-    function isPauser(address account) public view returns (bool) {
-        return _pausers.has(account);
-    }
-
-    function addPauser(address account) public onlyPauser {
-        _addPauser(account);
-    }
-
-    function renouncePauser() public {
-        _removePauser(msg.sender);
-    }
-
-    function _addPauser(address account) internal {
-        _pausers.add(account);
-        emit PauserAdded(account);
-    }
-
-    function _removePauser(address account) internal {
-        _pausers.remove(account);
-        emit PauserRemoved(account);
-    }
-}
-
-/**
- * @dev Contract module which allows children to implement an emergency stop
- * mechanism that can be triggered by an authorized account.
- *
- * This module is used through inheritance. It will make available the
- * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
- * the functions of your contract. Note that they will not be pausable by
- * simply including this module, only once the modifiers are put in place.
- */
-contract Pausable is PauserRole {
-    /**
-     * @dev Emitted when the pause is triggered by a pauser (`account`).
-     */
-    event Paused(address account);
-
-    /**
-     * @dev Emitted when the pause is lifted by a pauser (`account`).
-     */
-    event Unpaused(address account);
-
-    bool private _paused;
-
-    /**
-     * @dev Initializes the contract in unpaused state. Assigns the Pauser role
-     * to the deployer.
-     */
-    constructor () internal {
-        _paused = true;
-    }
-
-    /**
-     * @dev Returns true if the contract is paused, and false otherwise.
-     */
-    function paused() public view returns (bool) {
-        return _paused;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
-     */
-    modifier whenNotPaused() {
-        require(!_paused, "Pausable: paused");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is paused.
-     */
-    modifier whenPaused() {
-        require(_paused, "Pausable: not paused");
-        _;
-    }
-
-    /**
-     * @dev Called by a pauser to pause, triggers stopped state.
-     */
-    function pause() public onlyPauser whenNotPaused {
-        _paused = true;
-        emit Paused(msg.sender);
-    }
-
-    /**
-     * @dev Called by a pauser to unpause, returns to normal state.
-     */
-    function unpause() public onlyPauser whenPaused {
-        _paused = false;
-        emit Unpaused(msg.sender);
-    }
-}
-
 /**
  * @title IERC165
  * @dev https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md
@@ -288,7 +182,7 @@ interface IERC165 {
  * @title ERC721 Non-Fungible Token Standard basic interface
  * @dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md
  */
-contract IERC721 is IERC165, Pausable {
+contract IERC721 is IERC165 {
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
     event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
     event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
@@ -302,10 +196,10 @@ contract IERC721 is IERC165, Pausable {
     function setApprovalForAll(address operator, bool _approved) public;
     function isApprovedForAll(address owner, address operator) public view returns (bool);
 
-    function transferFrom(address from, address to, uint256 tokenId) public whenNotPaused returns (bool);
-    function safeTransferFrom(address from, address to, uint256 tokenId) public whenNotPaused returns (bool);
+    function transferFrom(address from, address to, uint256 tokenId) public;
+    function safeTransferFrom(address from, address to, uint256 tokenId) public;
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public whenNotPaused returns (bool);
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public;
 }
 
 /**
@@ -495,7 +389,7 @@ contract ERC721 is ERC165, IERC721 {
      * @param to address to receive the ownership of the given token ID
      * @param tokenId uint256 ID of the token to be transferred
     */
-    function transferFrom(address from, address to, uint256 tokenId) public whenNotPaused returns (bool) {
+    function transferFrom(address from, address to, uint256 tokenId) public {
         require(_isApprovedOrOwner(msg.sender, tokenId));
 
         _transferFrom(from, to, tokenId);
@@ -513,7 +407,7 @@ contract ERC721 is ERC165, IERC721 {
      * @param to address to receive the ownership of the given token ID
      * @param tokenId uint256 ID of the token to be transferred
     */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public whenNotPaused returns (bool) {
+    function safeTransferFrom(address from, address to, uint256 tokenId) public {
         safeTransferFrom(from, to, tokenId, "");
     }
 
@@ -529,7 +423,7 @@ contract ERC721 is ERC165, IERC721 {
      * @param tokenId uint256 ID of the token to be transferred
      * @param _data bytes data to send along with a safe transfer check
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public whenNotPaused returns (bool) {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
         transferFrom(from, to, tokenId);
         require(_checkOnERC721Received(from, to, tokenId, _data));
     }
@@ -953,10 +847,27 @@ contract ERC721Metadata is ERC165, ERC721, IERC721Metadata {
 }
 
 /**
+ * @title ERC721Mintable
+ * @dev ERC721 minting logic
+ */
+contract ERC721Mintable is MinterRole, ERC721 {
+    /**
+     * @dev Function to mint tokens
+     * @param to The address that will receive the minted tokens.
+     * @param tokenId The token id to mint.
+     * @return A boolean that indicates if the operation was successful.
+     */
+    function mint(address to, uint256 tokenId) public onlyMinter returns (bool) {
+        _mint(to, tokenId);
+        return true;
+    }
+}
+
+/**
  * @title ERC721MetadataMintable
  * @dev ERC721 minting logic with metadata
  */
-contract ERC721MetadataMintable is ERC721, ERC721Metadata, MinterRole {
+contract ERC721MetadataMintable is ERC721Metadata, ERC721Mintable {
     /**
      * @dev Function to mint tokens
      * @param to The address that will receive the minted tokens.
@@ -989,20 +900,20 @@ contract ERC721Burnable is ERC721 {
 contract StandardNFT is ERC721Enumerable, ERC721MetadataMintable, ERC721Burnable {
     using SafeMath for uint256;
     
-    constructor (string memory name, string memory symbol, address catalyst) ERC721Metadata(name, symbol) public {
-            _addMinter(catalyst);
-            mintWithTokenURI(catalyst, 0, "Catalyst");
-            _addPauser(catalyst);
+    constructor (string memory name, string memory symbol, address minter) ERC721Metadata(name, symbol) public {
+            _addMinter(minter);
+            _mint(minter, 0);
     }
     
-    // NFT transfers
-    function transfer(address _to, uint256 _tokenId) public whenNotPaused returns (bool) {
+    // Basic NFT transfers
+    
+    function transfer(address _to, uint256 _tokenId) public {
         safeTransferFrom(msg.sender, _to, _tokenId);
     }
 
-    function transferAll(address _to, uint256[] memory _tokenId) public whenNotPaused returns (bool) { 
+    function transferAll(address _to, uint256[] memory _tokenId) public { 
         for (uint i = 0; i < _tokenId.length; i++) {
-        safeTransferFrom(msg.sender, _to, _tokenId[i]);
+            safeTransferFrom(msg.sender, _to, _tokenId[i]);
         }
     }
 }
@@ -1029,11 +940,11 @@ contract StandardNFTFactory {
         return contracts.length;
     }
 
-    function newStandardNFT(string memory name, string memory symbol, address catalyst)
+    function newStandardNFT(string memory name, string memory symbol, address minter)
         public
         returns(address newContract)
     {
-        StandardNFT c = new StandardNFT(name, symbol, catalyst);
+        StandardNFT c = new StandardNFT(name, symbol, minter);
         contracts.push(c);
         lastContractAddress = address(c);
         return c;
