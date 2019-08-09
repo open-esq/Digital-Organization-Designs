@@ -143,8 +143,7 @@ contract BountyBoard {
     event Disputed();
     event Resolved(address indexed this, address indexed bountyMaker, address indexed bountyHunter);
 /**
- * @dev Sets the Bounty Board stable values for `bounty`, `price`, 'tokenContract', `buyer`, `seller`, 'arbiter', 'arbiterFee'. All seven of
- * these values are immutable: they can only be set once during construction and reflect essential deal terms.
+ * @dev Constructor function sets 'bountyMaker' address to control Bounty Board. 
  */    
    constructor(address _bountyMaker)
         public {
@@ -180,6 +179,9 @@ contract BountyBoard {
                         require(state == _state);
                          _;
                         }
+        /**
+         * @dev bountyMaker posts bounty description, price, payment token and arbitration info. bountyID timestamped.
+         */
            function postBounty(string memory _bounty, uint256 _bountyPrice, address _bountyToken, address _arbiter, uint256 _arbiterFee) public onlyBountyMaker inState(State.Blank) {
                 state = State.Posted;
                 bounty = _bounty;
@@ -190,6 +192,9 @@ contract BountyBoard {
                 bountyID = now;
                 emit bountyPosted(bounty, bountyPrice, bountyToken);
                 }
+        /**
+         * @dev bountyMaker can withdraw escrow deposit(s) before bountyHunter confirmation.
+         */
             function withdrawBounty() public onlyBountyMaker inState(State.Posted) {
                 state = State.Blank;
                 ERC20 token = ERC20(bountyToken);
@@ -197,6 +202,9 @@ contract BountyBoard {
                 token.transfer(bountyMaker, tokenBalance);
                 emit bountyWithdrawn();
                 }
+        /**
+         * @dev bountyMaker assigns bounty to bountyHunter to receive 'price' if confirmReceipt called.
+         */
             function assignBounty(address _bountyHunter) public onlyBountyMaker inState(State.Posted) {
                 state = State.Claimed;
                 bountyHunter = _bountyHunter;
@@ -204,8 +212,8 @@ contract BountyBoard {
                 }
         /**
          * @dev bountyMaker confirms receipt of bounty service from bountyHunter;
-         * bounty 'Price' is transferred to bountyHunter.
-         * (presuming bountyMaker deposits to escrow to motivate bountyHunter delivery)
+         * bounty 'price' is transferred to bountyHunter.
+         * (presuming bountyMaker deposits bountyToken matching 'price' in BB escrow to motivate bountyHunter)
          */
            function confirmReceipt() public onlyBountyMaker inState(State.Claimed) {
                 state = State.Blank;
@@ -215,15 +223,14 @@ contract BountyBoard {
                 }
         /**
          * @dev bountyMaker or bountyHunter can initiate dispute related to bounty transaction,
-         * placing bounty 'Price' transfer and split of value into arbiter control.
+         * placing bounty 'price' transfer and split of value into arbiter control.
          */
            function initiateDispute() public onlyBountyMakerOrBountyHunter inState(State.Claimed) {
                 state = State.Disputed;
                 emit Disputed();
                 }
         /**
-         * @dev Arbiter can resolve dispute and claim token reward by entering in split of 'price' value,
-         * minus 5% 'arbiter fee'.
+         * @dev Arbiter can resolve dispute and claim a fee by entering in split of 'price' value.
          */
            function resolveDispute(uint256 MakerAward, uint256 HunterAward) public onlyArbiter inState(State.Disputed) {
                 state = State.Blank;
