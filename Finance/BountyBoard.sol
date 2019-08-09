@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Etherscan.io on 2019-08-09
+*/
+
 pragma solidity 0.4.26;
 
 /**
@@ -203,7 +207,8 @@ contract BountyBoard {
                 emit bountyWithdrawn();
                 }
         /**
-         * @dev bountyMaker assigns bounty to bountyHunter to receive 'price' if confirmReceipt called.
+         * @dev bountyMaker assigns bounty to bountyHunter to receive 'price' if confirmReceipt called; 
+         * bountyToken and 'price' locked in escrow.
          */
             function assignBounty(address _bountyHunter) public onlyBountyMaker inState(State.Posted) {
                 state = State.Claimed;
