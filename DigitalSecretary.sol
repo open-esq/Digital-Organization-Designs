@@ -170,7 +170,7 @@ contract DigitalSecretary {
         entity.goodStanding = false; 
     }
     
-    // digital secretary can reduce entity standing upon compliance  
+    // digital secretary can repair entity standing upon compliance  
     function repairStanding(uint256 fileNumber) public onlySecretary {
         Entity storage entity = entities[fileNumber];
         entity.goodStanding = true; 
