@@ -75,7 +75,7 @@ contract DigitalSecretary {
     
     uint256 public entityFilings;
     address public feeTokenAddress = 0x8ad3aA5d5ff084307d28C8f514D7a193B2Bfe725;
-    uint256 public feeAmount = 500000000000000000000;
+    uint256 public feeAmount = 50000000000000000000;
     address public secretary = msg.sender;
     
     mapping (uint256 => Entity) public entities;
@@ -83,15 +83,16 @@ contract DigitalSecretary {
     event entityRegistered(uint256 fileNumber, uint256 filingDate, string entityName, uint8 entityKind, bool domestic);
     
     struct Entity {
-        uint256 fileNumber; // established by succesful registration function call
-        uint256 filingDate; // established by blocktime of succesful registration function call
+        uint256 fileNumber; // established by successful registration function call
+        uint256 filingDate; // established by blocktime of successful registration function call
         string entityName; // Full Legal Name / e.g., ACME LLC
         uint8 entityKind; // see below enum / default, '3' - LLC
         uint8 entityType; // see below enum / default, '1' - General
         bool domestic; // default "true"
         string registeredAgentinfo; // could be IPFS hash, plaintext, or JSON
         string filingDetails; // could be IPFS hash, plaintext, or JSON 
-        bool goodStanding; // established "true" on succesful registration function call
+        uint256 feesPaid; // running tally of fees paid to digital secretary 
+        bool goodStanding; // established "true" on successful registration function call
         }
       
     // compare: Delaware resource: https://icis.corp.delaware.gov/Ecorp/FieldDesc.aspx#ENTITY%20TYPE 
@@ -136,6 +137,7 @@ contract DigitalSecretary {
         
         uint256 fileNumber = entityFilings + 1;
         uint256 filingDate = block.timestamp; // now
+        uint256 feesPaid = feeAmount; 
         bool goodStanding = true;
         
         entityFilings = entityFilings + 1;
@@ -149,6 +151,7 @@ contract DigitalSecretary {
             domestic,
             registeredAgentinfo,
             filingDetails,
+            feesPaid,
             goodStanding);
             
             emit entityRegistered(fileNumber, filingDate, entityName, entityKind, domestic);
