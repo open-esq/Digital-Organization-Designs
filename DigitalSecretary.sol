@@ -73,26 +73,26 @@ interface IERC20 {
 
 contract DigitalSecretary {
     
-    uint256 public entityFilings;
-    address public feeTokenAddress = 0x8ad3aA5d5ff084307d28C8f514D7a193B2Bfe725;
-    uint256 public feeAmount = 50000000000000000000;
-    address public secretary = msg.sender;
+    uint256 public entityFilings; // tallies number of successful entity registration calls
+    address public feeTokenAddress = 0x8ad3aA5d5ff084307d28C8f514D7a193B2Bfe725; // RinkebyDAI / thanks Paul Berg!
+    uint256 public feeAmount = 50000000000000000000; // "50" filing fee amount 
+    address public secretary = msg.sender; // creator of contract is default secretary to receive fees
     
-    mapping (uint256 => Entity) public entities;
+    mapping (uint256 => Entity) public entities; // mapping registered entities to filing numbers
     
     event entityRegistered(uint256 fileNumber, uint256 filingDate, string entityName, uint8 entityKind, bool domestic);
     
     struct Entity {
-        uint256 fileNumber; // established by successful registration function call
-        uint256 filingDate; // established by blocktime of successful registration function call
-        string entityName; // Full Legal Name / e.g., ACME LLC
-        uint8 entityKind; // see below enum / default, '3' - LLC
-        uint8 entityType; // see below enum / default, '1' - General
+        uint256 fileNumber; // latest successful registration function call
+        uint256 filingDate; // blocktime of successful registration function call
+        string entityName; // Full Legal Name / e.g., "ACME LLC"
+        uint8 entityKind; // see below enum / default, '3' - "LLC"
+        uint8 entityType; // see below enum / default, '1' - "General"
         bool domestic; // default "true"
-        string registeredAgentinfo; // could be IPFS hash, plaintext, or JSON
-        string filingDetails; // could be IPFS hash, plaintext, or JSON 
-        uint256 feesPaid; // running tally of fees paid to digital secretary 
-        bool goodStanding; // established "true" on successful registration function call
+        string registeredAgentdetails; // could be IPFS hash, plaintext, or JSON detailing registered agent
+        string filingDetails; // could be IPFS hash, plaintext, or JSON presenting articles or certificate of incorporation
+        uint256 feesPaid; // running tally of fees paid to digital secretary by registered entity
+        bool goodStanding; // default "true" on successful registration function call
         }
       
     // compare: Delaware resource: https://icis.corp.delaware.gov/Ecorp/FieldDesc.aspx#ENTITY%20TYPE 
@@ -105,6 +105,7 @@ contract DigitalSecretary {
         UNPA
     }
     
+    // compare: Delaware resource: https://icis.corp.delaware.gov/Ecorp/FieldDesc.aspx#ENTITY%20TYPE
     enum Type {
         GENERAL,
         BANK,
@@ -119,13 +120,19 @@ contract DigitalSecretary {
         STOCK
     }
     
-    // call to establish digital entity registration record / 
+    // restricts certain functions to digital secretary
+    modifier onlySecretary {
+    	require(msg.sender == secretary);
+    	_;
+	}
+    
+    // public function to register entity with digital secretary 
     function registerEntity(
         string memory entityName,
         uint8 entityKind,
         uint8 entityType,
         bool domestic,
-        string memory registeredAgentinfo,
+        string memory registeredAgentdetails,
         string memory filingDetails) public {
             
         IERC20 feeToken = IERC20(feeTokenAddress);
@@ -135,12 +142,12 @@ contract DigitalSecretary {
         Kind(entityKind);
         Type(entityType);
         
-        uint256 fileNumber = entityFilings + 1;
+        uint256 fileNumber = entityFilings + 1; // tallies from running total
         uint256 filingDate = block.timestamp; // now
-        uint256 feesPaid = feeAmount; 
-        bool goodStanding = true;
+        uint256 feesPaid = feeAmount; // pushes fee amount to entity tally
+        bool goodStanding = true; // default value for new entity
         
-        entityFilings = entityFilings + 1;
+        entityFilings = entityFilings + 1; // tallies new filing to running total
             
         entities[fileNumber] = Entity(
             fileNumber,
@@ -149,11 +156,23 @@ contract DigitalSecretary {
             entityKind,
             entityType,
             domestic,
-            registeredAgentinfo,
+            registeredAgentdetails,
             filingDetails,
             feesPaid,
             goodStanding);
             
             emit entityRegistered(fileNumber, filingDate, entityName, entityKind, domestic);
         }
+    
+    // digital secretary can reduce entity standing for non-compliance  
+    function reduceStanding(uint256 fileNumber) public onlySecretary {
+        Entity storage entity = entities[fileNumber];
+        entity.goodStanding = false; 
+    }
+    
+    // digital secretary can reduce entity standing upon compliance  
+    function repairStanding(uint256 fileNumber) public onlySecretary {
+        Entity storage entity = entities[fileNumber];
+        entity.goodStanding = true; 
+    }
 }
