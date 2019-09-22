@@ -90,7 +90,7 @@ contract DigitalSecretary {
         uint8 entityType; // see below enum / default, '1' - "General"
         bool domestic; // default "true"
         string registeredAgentdetails; // could be IPFS hash, plaintext, or JSON detailing registered agent
-        string filingDetails; // could be IPFS hash, plaintext, or JSON presenting articles or certificate of incorporation
+        string filingDetails; // could be IPFS hash, plaintext, or JSON detailing articles or certificate of incorporation
         uint256 feesPaid; // running tally of fees paid to digital secretary by registered entity
         bool goodStanding; // default "true" on successful registration function call
         }
@@ -163,7 +163,13 @@ contract DigitalSecretary {
             
             emit entityRegistered(fileNumber, filingDate, entityName, entityKind, domestic);
         }
-    
+
+    // digital secretary can convert entity kind   
+    function convertEntityKind(uint256 fileNumber, uint8 newKind) public onlySecretary {
+        Entity storage entity = entities[fileNumber];
+        entity.entityKind = newKind; 
+    }
+
     // digital secretary can reduce entity standing for non-compliance  
     function reduceStanding(uint256 fileNumber) public onlySecretary {
         Entity storage entity = entities[fileNumber];
