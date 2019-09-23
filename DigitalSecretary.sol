@@ -112,7 +112,7 @@ contract DigitalSecretary {
         entity.entityName = newName; 
     }
     
-    // digital secretary can update entity name   
+    // digital secretary can update registered agent details  
     function updateRegisteredAgent(uint256 fileNumber, string memory registeredAgentdetails) public onlySecretary {
         Entity storage entity = entities[fileNumber];
         entity.registeredAgentdetails = registeredAgentdetails; 
@@ -124,7 +124,7 @@ contract DigitalSecretary {
         entity.entityKind = newKind; 
     }
     
-    // digital secretary can convert entity kind   
+    // digital secretary can convert entity type   
     function convertEntityType(uint256 fileNumber, uint8 newType) public onlySecretary {
         Entity storage entity = entities[fileNumber];
         entity.entityType = newType; 
@@ -136,7 +136,7 @@ contract DigitalSecretary {
         entity.domestic = domestic; 
     }
 
-    // digital secretary can convert entity kind   
+    // digital secretary can convert entity standing   
     function convertEntityStanding(uint256 fileNumber, bool goodStanding) public onlySecretary {
         Entity storage entity = entities[fileNumber];
         entity.goodStanding = goodStanding; 
