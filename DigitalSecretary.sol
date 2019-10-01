@@ -358,7 +358,7 @@ contract DigitalSecretary is SecretaryRole {
         STOCK
     }
     
-	/**
+    /**
      * @dev Sets the initial values for `filingFeeAmount`, `feeTokenAddress`, `treasuryAddress`. 
      */
     constructor (uint256 _filingFeeAmount, address _feeTokenAddress, address _treasuryAddress) public {
@@ -419,7 +419,7 @@ contract DigitalSecretary is SecretaryRole {
         feeTokenAddress = _feeTokenAddress;
     }
     
-    // digital secretary can update entity filing fee amount   
+    // digital secretary can update treasury address   
     function updateTreasuryAddress(address _treasuryAddress) public onlySecretary {
         treasuryAddress = _treasuryAddress;
     }
