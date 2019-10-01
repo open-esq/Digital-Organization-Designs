@@ -420,7 +420,7 @@ contract DigitalSecretary is SecretaryRole {
     }
     
     // digital secretary can update entity filing fee amount   
-    function updateFilingFee(address _treasuryAddress) public onlySecretary {
+    function updateTreasuryAddress(address _treasuryAddress) public onlySecretary {
         treasuryAddress = _treasuryAddress;
     }
     
