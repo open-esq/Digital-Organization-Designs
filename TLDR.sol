@@ -457,7 +457,7 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
     LEXSCRIBE FUNCTIONS
     ***************/
     // **reputable lexScribes can register lexScript legal wrappers on TLDR and program fees for usage**
-	function writeLEXScriptWrapper(string memory templateTerms, uint256 scribelexRate, address scribelexAddress) public onlyScribe {
+	function writeLEXScriptWrapper(string memory templateTerms, uint256 LEXRate, address LEXAddress) public onlyScribe {
 	        require(isReputable(msg.sender));
 	        address lexScribe = msg.sender;
 	        uint256 lexID = LSW.add(1); // **reflects new lexScript value for tracking legal wrappers**
@@ -465,21 +465,21 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
 	    
 	        lexScript[lexID] = lexScriptWrapper( // populate lexScript data for reference in rddr
                 	lexScribe,
-                	scribelexAddress,
+                	LEXAddress,
                 	templateTerms,
                 	lexID,
-                	scribelexRate);
+                	LEXRate);
                 	
             emit Enscribed(lexID, lexScribe); 
 	    }
 	// **lexScribes can update registered lexScript legal wrappers with newTemplateTerms and newLexAddress**
-	function editLEXScriptWrapper(uint256 lexID, string memory newTemplateTerms, address newLexAddress) public {
+	function editLEXScriptWrapper(uint256 lexID, string memory newTemplateTerms, address newLEXAddress) public {
 	        lexScriptWrapper storage lS = lexScript[lexID];
 	        require(address(msg.sender) == lS.lexScribe); // program safety check / authorization
 	    
 	        lexScript[lexID] = lexScriptWrapper( // populate updated lexScript data for reference in rddr
                 	msg.sender,
-                	newLexAddress,
+                	newLEXAddress,
                 	newTemplateTerms,
                 	lexID,
                 	lS.lexRate);
