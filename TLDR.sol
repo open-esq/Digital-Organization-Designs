@@ -360,21 +360,32 @@ TLDR CONTRACT
 contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engineering registry to wrap and enforce digital transactions with legal and ethereal security**
     using SafeMath for uint256;
     
-    mapping(address => uint256) public reputation;
-    mapping(address => uint256) public lastActionTimestamp;
+    // **lexAgon DAO treasury references (aragon.org digital organization)**
+	address payable public lexAgonDAO = 0xBBE222Ef97076b786f661246232E41BE0DFf6cc4;
+	
+	// **counters for lexScribe lexScriptWrapper and registered DDR**
+	uint256 public LSW = 1; // **number of lexScriptWrappers enscribed herein**
+	uint256 public RDDR; // **number of DDRs registered hereby**
+	
+	// **internal lexScript references** //
+	uint256 private lexRate; // **rate paid from payDDR transaction to associated lexAddress (lexFee)**
+	address private lexAddress; // **lexScribe nominated lexAddress to receive lexFee**
     
-    mapping (uint256 => wetCodeWrapper) public wetCode; // **mapping registered wetCode templates**
+    mapping(address => uint256) public reputation; // **mapping lexScribe reputation**
+    mapping(address => uint256) public lastActionTimestamp; // **mapping lexScribe governance actions*
+    
+    mapping (uint256 => lexScriptWrapper) public lexScript; // **mapping registered lexScript 'wet code' templates**
 	mapping (uint256 => DDR) public rddr; // **mapping registered rddr call numbers**
 	
-    struct wetCodeWrapper { // **Digital Dollar Retainer (DDR) wetCode templates maintained by lexDAO scribes (lexScribe)**
-            address lexScribe; // **lexScribe that enscribed wetCode template into TLDR**
-            string templateTerms; // **wetCode template terms to wrap DDR for legal security**
-            uint256 lexID; // **ID number to reference in DDR to inherit wetCode wrapper**
+    struct lexScriptWrapper { // **LSW: Digital Dollar Retainer (DDR) lexScript templates maintained by lexDAO scribes (lexScribe)**
+            address lexScribe; // **lexScribe that enscribed lexScript template into TLDR**
+            address lexAddress; // **ethereum address to forward lexScript template lexScribe fees**
+            string templateTerms; // **lexScript template terms to wrap DDR for legal security**
+            uint256 lexID; // **ID number to reference in DDR to inherit lexScript wrapper**
             uint256 lexRate; // **lexScribe fee in ddrToken type per rddr payment made thereunder / e.g., 100 = 1% fee on rddr payDDR payment transaction** 
-            address lexAddress; // **ethereum address to forward wetCode template lexScribe fees**
         } 
 
-	struct DDR {
+	struct DDR { // **Digital Dollar Retainer**
         	address client; // **client ethereum address**
         	address provider; // **ethereum address that receives payments in exchange for goods or services**
         	IERC20 ddrToken; // **ERC-20 digital token address used to transfer value on ethereum under rddr / e.g., DAI 'digital dollar' - 0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359**
@@ -387,108 +398,98 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
         	uint256 deliverableRate; // **rate for rddr deliverables in digital dollar wei amount / 1 = 1000000000000000000**
         	uint256 paid; // **tracking amount of designated ERC-20 paid under rddr in wei amount**
         	uint256 payCap; // **cap in wei amount to limit payments under rddr**;
-        	uint256 lexID; // **lexID number reference to include wetCodeWrapper for legal security / default '0' for general DDR wetCode template**
+        	uint256 lexID; // **lexID number reference to include lexScriptWrapper for legal security / default '0' for general DDR lexScript template**
     	}
 
-	constructor() public {
-	        address lexScribe = msg.sender;
-	        // **default wetCode legal wrapper stating general human-readable DDR terms for rddr to inherit / lexID = '0'**
+	constructor() public { // **deploys TLDR contract and stores base template "0" (lexID) for rddr lexScript terms**
+	        address LEXScribe = msg.sender; // **TLDR creator is initial lexScribe**
+	        // **default lexScript legal wrapper stating general human-readable DDR terms for rddr to inherit / lexID = '0'**
 	        string memory ddrTerms = "|| Establishing a digital retainer hereby as [[ddrNumber]] and acknowledging mutual consideration and agreement, Client, identified by ethereum address 0x[[client]], commits to perform under this digital payment transactional script capped at $[[payCap]] digital dollar value denominated in 0x[[ddrToken]] for benefit of Provider, identified by ethereum address 0x[[provider]], in exchange for prompt satisfaction of the following, [[deliverable]], to Client by Provider upon scripted payments set at the rate of $[[deliverableRate]] per deliverable, with such retainer relationship not to exceed [[retainerDuration]] seconds and to be governed by choice of [[governingLawForum]] law and 'either/or' arbitration rules in [[governingLawForum]]. ||";
 	        uint256 lexID = 0; // **default lexID for constructor / general rddr reference**
-	        uint256 lexRate = 100; // **1% lexRate**
-	        address lexAddress = 0xBBE222Ef97076b786f661246232E41BE0DFf6cc4; // **Open, ESQ LLC_DAO ethereum address**
-	        wetCode[lexID] = wetCodeWrapper( // **populate default '0' wetCode data for reference in WCW**
-                	lexScribe,
+	        uint256 LEXRate = 100; // **1% lexRate**
+	        address LEXAddress = 0xBBE222Ef97076b786f661246232E41BE0DFf6cc4; // **Open, ESQ LLC_DAO ethereum address**
+	        lexScript[lexID] = lexScriptWrapper( // **populate default '0' lexScript data for reference in LSW**
+                	LEXScribe,
+                	LEXAddress,
                 	ddrTerms,
                 	lexID,
-                	lexRate,
-                	lexAddress);
+                	LEXRate);
         }
-	
-	// **counters for lexScribe wetCodeWrapper and registered DDR
-	uint256 public WCW = 1; // **number of wetCodeWrappers enscribed herein**
-	uint256 public RDDR; // **number of DDRs registered hereby**
-	
-	// **lexScribe references** //
-	uint256 private lexRate; // **internal lexRate script reference**
-	address private lexAddress; // **internal lexAddress script reference**
 
     // **TLDR Events**
-    event Enscribed(uint256 indexed lexID, address indexed lexScribe);
+    event Enscribed(uint256 indexed lexID, address indexed lexScribe); // **triggered on successful edits to LSW**
 	event Registered(uint256 indexed ddrNumber, uint256 indexed lexID, address client, address provider); // **triggered on successful registration**
-	event Paid(uint256 indexed ddrNumber, uint256 indexed ratePaid, uint256 indexed totalPaid, address client); // **triggered on successful rddr payments**
+	event Paid(uint256 indexed ddrNumber, uint256 indexed lexID, uint256 ratePaid, uint256 totalPaid, address client); // **triggered on successful rddr payments**
 
-	/*
-	* TLDR governance functions
-	*/
-	
+    /***************
+    GOVERNANCE FUNCTIONS
+    ***************/
+    // **lexScribes can stake ether (Ξ) value for TLDR reputation and function access**
     function stakeReputation() payable public onlyScribe {
-            require(msg.value == 0.01 ether);
+            require(msg.value == 0.1 ether);
             reputation[msg.sender] = 10;
-            address(0).transfer(msg.value);
+            address(lexAgonDAO).transfer(msg.value);
         }
-    
+    // **check on lexScribe reputation**
     function isReputable(address x) public view returns (bool) {
             return reputation[x] > 0;
         }
-    
+    // **restricts governance function calls to once per day**
     modifier cooldown() {
             require(now.sub(lastActionTimestamp[msg.sender]) > 1 days);
             _;
             lastActionTimestamp[msg.sender] = now;
         }
-    
-    function reduce(address complainedLexScribe) cooldown public {
+    // **reputable LexScribes can reduce each other's reputation**
+    function reduceScribeRep(address reducedLexScribe) cooldown public {
             require(isReputable(msg.sender));
-            reputation[complainedLexScribe] = reputation[complainedLexScribe].sub(1); 
+            reputation[reducedLexScribe] = reputation[reducedLexScribe].sub(1); 
         }
-
-    function repair(address endorsedLexScribe) cooldown public {
+    // **reputable LexScribes can repair each other's reputation**
+    function repairScribeRep(address repairedLexScribe) cooldown public {
             require(isReputable(msg.sender));
-            require(reputation[endorsedLexScribe] < 10);
-            reputation[endorsedLexScribe] = reputation[endorsedLexScribe].add(1); 
+            require(reputation[repairedLexScribe] < 10);
+            reputation[repairedLexScribe] = reputation[repairedLexScribe].add(1); 
             lastActionTimestamp[msg.sender] = now;
         }
 
-	/*
-	* lexScribe functions
-	*/
-	
-    // **reputable lexScribes can register wetCode legal wrappers on TLDR and program fees for usage**
-	function writeWetCodeWrapper(string memory templateTerms, uint256 scribelexRate, address scribelexAddress) public onlyScribe {
+    /***************
+    LEXSCRIBE FUNCTIONS
+    ***************/
+    // **reputable lexScribes can register lexScript legal wrappers on TLDR and program fees for usage**
+	function writeLEXScriptWrapper(string memory templateTerms, uint256 scribelexRate, address scribelexAddress) public onlyScribe {
 	        require(isReputable(msg.sender));
 	        address lexScribe = msg.sender;
-	        uint256 lexID = WCW.add(1); // **reflects new wetCode value for tracking legal wrappers**
-	        WCW = WCW.add(1); // counts new entry to WCW 
+	        uint256 lexID = LSW.add(1); // **reflects new lexScript value for tracking legal wrappers**
+	        LSW = LSW.add(1); // counts new entry to LSW 
 	    
-	        wetCode[lexID] = wetCodeWrapper( // populate wetCode data for reference in rddr
+	        lexScript[lexID] = lexScriptWrapper( // populate lexScript data for reference in rddr
                 	lexScribe,
+                	scribelexAddress,
                 	templateTerms,
                 	lexID,
-                	scribelexRate,
-                	scribelexAddress);
+                	scribelexRate);
                 	
             emit Enscribed(lexID, lexScribe); 
 	    }
-	
-	function editWetCodeWrapper(uint256 lexID, string memory newTemplateTerms, address newLexAddress) public {
-	        wetCodeWrapper storage wC = wetCode[lexID];
-	        require(address(msg.sender) == wC.lexScribe); // program safety check / authorization
+	// **lexScribes can update registered lexScript legal wrappers with newTemplateTerms and newLexAddress**
+	function editLEXScriptWrapper(uint256 lexID, string memory newTemplateTerms, address newLexAddress) public {
+	        lexScriptWrapper storage lS = lexScript[lexID];
+	        require(address(msg.sender) == lS.lexScribe); // program safety check / authorization
 	    
-	        wetCode[lexID] = wetCodeWrapper( // populate updated wetCode data for reference in rddr
+	        lexScript[lexID] = lexScriptWrapper( // populate updated lexScript data for reference in rddr
                 	msg.sender,
+                	newLexAddress,
                 	newTemplateTerms,
                 	lexID,
-                	wC.lexRate,
-                	newLexAddress);
+                	lS.lexRate);
             emit Enscribed(lexID, msg.sender);
     	}
     	
-	/*
-	* PUBLIC functions
-	*/
-	
-	// register DDR with TLDR scripts
+    /***************
+    MARKET FUNCTIONS
+    ***************/
+	// **register DDR with TLDR lexScripts**
 	function registerDDR(
     	    address client,
     	    address provider,
@@ -525,17 +526,17 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
             emit Registered(ddrNumber, lexID, client, provider); 
         }
 
-    // pay registered DDR on TLDR-scripted terms
+    // **pay registered DDR on TLDR**
 	function payDDR(uint256 ddrNumber) public { // **forwards approved ddrToken deliverableRate amount to provider ethereum address**
     	    DDR storage ddr = rddr[ddrNumber]; // **retrieve rddr data**
-    	    wetCodeWrapper storage wC = wetCode[ddr.lexID];
+    	    lexScriptWrapper storage lS = lexScript[ddr.lexID];
     	    require (now <= ddr.retainerTermination); // **program safety check / time**
     	    require(address(msg.sender) == ddr.client); // program safety check / authorization
     	    require(ddr.paid.add(ddr.deliverableRate) <= ddr.payCap, "payDAI: payCap exceeded"); // **program safety check / economics**
-    	    uint256 lexFee = ddr.deliverableRate.div(wC.lexRate);
+    	    uint256 lexFee = ddr.deliverableRate.div(lS.lexRate);
     	    ddr.ddrToken.transferFrom(msg.sender, ddr.provider, ddr.deliverableRate); // **executes ERC-20 transfer**
-    	    ddr.ddrToken.transferFrom(msg.sender, wC.lexAddress, lexFee);
+    	    ddr.ddrToken.transferFrom(msg.sender, lS.lexAddress, lexFee);
     	    ddr.paid = ddr.paid.add(ddr.deliverableRate); // **tracks amount paid under rddr**
-        	emit Paid(ddr.ddrNumber, ddr.deliverableRate, ddr.paid, msg.sender); 
+        	emit Paid(ddr.ddrNumber, ddr.lexID, ddr.deliverableRate, ddr.paid, msg.sender); 
     	}
 }
