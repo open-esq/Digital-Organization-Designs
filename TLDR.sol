@@ -10,15 +10,172 @@ DEAR MSG.SENDER(S):
 
 ///// STEAL THIS C0D3SL4W 
 
-|| lexDAO ||
+|| lexDAO || 
 ~presented by Open, ESQ LLC_DAO~
 */
 
 pragma solidity 0.5.9;
 
 /***************
-OPENZEPPELIN REFERENCE CONTRACTS - ScribeRole, ERC-20 scripts
+OPENZEPPELIN REFERENCE CONTRACTS - SafeMath, ScribeRole, ERC-20 scripts
 ***************/
+
+/**
+ * @dev Wrappers over Solidity's arithmetic operations with added overflow
+ * checks.
+ *
+ * Arithmetic operations in Solidity wrap on overflow. This can easily result
+ * in bugs, because programmers usually assume that an overflow raises an
+ * error, which is the standard behavior in high level programming languages.
+ * `SafeMath` restores this intuition by reverting the transaction when an
+ * operation overflows.
+ *
+ * Using this library instead of the unchecked operations eliminates an entire
+ * class of bugs, so it's recommended to use it always.
+ */
+library SafeMath {
+    /**
+     * @dev Returns the addition of two unsigned integers, reverting on
+     * overflow.
+     *
+     * Counterpart to Solidity's `+` operator.
+     *
+     * Requirements:
+     * - Addition cannot overflow.
+     */
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a, "SafeMath: addition overflow");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, reverting on
+     * overflow (when the result is negative).
+     *
+     * Counterpart to Solidity's `-` operator.
+     *
+     * Requirements:
+     * - Subtraction cannot overflow.
+     */
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return sub(a, b, "SafeMath: subtraction overflow");
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on
+     * overflow (when the result is negative).
+     *
+     * Counterpart to Solidity's `-` operator.
+     *
+     * Requirements:
+     * - Subtraction cannot overflow.
+     *
+     * NOTE: This is a feature of the next version of OpenZeppelin Contracts.
+     * @dev Get it via `npm install @openzeppelin/contracts@next`.
+     */
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        require(b <= a, errorMessage);
+        uint256 c = a - b;
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the multiplication of two unsigned integers, reverting on
+     * overflow.
+     *
+     * Counterpart to Solidity's `*` operator.
+     *
+     * Requirements:
+     * - Multiplication cannot overflow.
+     */
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        uint256 c = a * b;
+        require(c / a == b, "SafeMath: multiplication overflow");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the integer division of two unsigned integers. Reverts on
+     * division by zero. The result is rounded towards zero.
+     *
+     * Counterpart to Solidity's `/` operator. Note: this function uses a
+     * `revert` opcode (which leaves remaining gas untouched) while Solidity
+     * uses an invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        return div(a, b, "SafeMath: division by zero");
+    }
+
+    /**
+     * @dev Returns the integer division of two unsigned integers. Reverts with custom message on
+     * division by zero. The result is rounded towards zero.
+     *
+     * Counterpart to Solidity's `/` operator. Note: this function uses a
+     * `revert` opcode (which leaves remaining gas untouched) while Solidity
+     * uses an invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     * NOTE: This is a feature of the next version of OpenZeppelin Contracts.
+     * @dev Get it via `npm install @openzeppelin/contracts@next`.
+     */
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        // Solidity only automatically asserts when dividing by 0
+        require(b > 0, errorMessage);
+        uint256 c = a / b;
+        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
+     * Reverts when dividing by zero.
+     *
+     * Counterpart to Solidity's `%` operator. This function uses a `revert`
+     * opcode (which leaves remaining gas untouched) while Solidity uses an
+     * invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
+        return mod(a, b, "SafeMath: modulo by zero");
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
+     * Reverts with custom message when dividing by zero.
+     *
+     * Counterpart to Solidity's `%` operator. This function uses a `revert`
+     * opcode (which leaves remaining gas untouched) while Solidity uses an
+     * invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     *
+     * NOTE: This is a feature of the next version of OpenZeppelin Contracts.
+     * @dev Get it via `npm install @openzeppelin/contracts@next`.
+     */
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        require(b != 0, errorMessage);
+        return a % b;
+    }
+}
 
 /**
  * @title Roles
@@ -201,10 +358,14 @@ TLDR CONTRACT
 ***************/
 
 contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engineering registry to wrap and enforce digital transactions with legal and ethereal security**
+    using SafeMath for uint256;
+    
+    mapping(address => uint256) public reputation;
+    mapping(address => uint256) public lastActionTimestamp;
     
     mapping (uint256 => wetCodeWrapper) public wetCode; // **mapping registered wetCode templates**
 	mapping (uint256 => DDR) public rddr; // **mapping registered rddr call numbers**
-
+	
     struct wetCodeWrapper { // **Digital Dollar Retainer (DDR) wetCode templates maintained by lexDAO scribes (lexScribe)**
             address lexScribe; // **lexScribe that enscribed wetCode template into TLDR**
             string templateTerms; // **wetCode template terms to wrap DDR for legal security**
@@ -257,18 +418,55 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
 	event Registered(uint256 indexed ddrNumber, uint256 indexed lexID, address client, address provider); // **triggered on successful registration**
 	event Paid(uint256 indexed ddrNumber, uint256 indexed ratePaid, uint256 indexed totalPaid, address client); // **triggered on successful rddr payments**
 
-    // **lexScribes can register wetCode legal wrappers on TLDR and program fees for usage**
-	function writeWetCodeWrapper(string memory templateTerms) public onlyScribe {
+	/*
+	* TLDR governance functions
+	*/
+	
+    function stakeReputation() payable public onlyScribe {
+            require(msg.value == 0.01 ether);
+            reputation[msg.sender] = 10;
+            address(0).transfer(msg.value);
+        }
+    
+    function isReputable(address x) public view returns (bool) {
+            return reputation[x] > 0;
+        }
+    
+    modifier cooldown() {
+            require(now.sub(lastActionTimestamp[msg.sender]) > 1 days);
+            _;
+            lastActionTimestamp[msg.sender] = now;
+        }
+    
+    function reduce(address complainedLexScribe) cooldown public {
+            require(isReputable(msg.sender));
+            reputation[complainedLexScribe] = reputation[complainedLexScribe].sub(1); 
+        }
+
+    function repair(address endorsedLexScribe) cooldown public {
+            require(isReputable(msg.sender));
+            require(reputation[endorsedLexScribe] < 10);
+            reputation[endorsedLexScribe] = reputation[endorsedLexScribe].add(1); 
+            lastActionTimestamp[msg.sender] = now;
+        }
+
+	/*
+	* lexScribe functions
+	*/
+	
+    // **reputable lexScribes can register wetCode legal wrappers on TLDR and program fees for usage**
+	function writeWetCodeWrapper(string memory templateTerms, uint256 scribelexRate, address scribelexAddress) public onlyScribe {
+	        require(isReputable(msg.sender));
 	        address lexScribe = msg.sender;
-	        uint256 lexID = WCW + 1; // **reflects new wetCode value for tracking legal wrappers**
-	        WCW = WCW + 1; // counts new entry to WCW 
+	        uint256 lexID = WCW.add(1); // **reflects new wetCode value for tracking legal wrappers**
+	        WCW = WCW.add(1); // counts new entry to WCW 
 	    
 	        wetCode[lexID] = wetCodeWrapper( // populate wetCode data for reference in rddr
                 	lexScribe,
                 	templateTerms,
                 	lexID,
-                	lexRate,
-                	lexAddress);
+                	scribelexRate,
+                	scribelexAddress);
                 	
             emit Enscribed(lexID, lexScribe); 
 	    }
@@ -285,8 +483,11 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
                 	newLexAddress);
             emit Enscribed(lexID, msg.sender);
     	}
+    	
+	/*
+	* PUBLIC functions
+	*/
 	
-
 	// register DDR with TLDR scripts
 	function registerDDR(
     	    address client,
@@ -299,12 +500,12 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
     	    uint256 payCap,
     	    uint256 lexID) public {
             require(deliverableRate <= payCap, "registerDDR: deliverableRate cannot exceed payCap"); // **program safety check / economics**
-            uint256 ddrNumber = RDDR + 1; // **reflects new rddr value for tracking payments**
+            uint256 ddrNumber = RDDR.add(1); // **reflects new rddr value for tracking payments**
             uint256 paid = 0; // **initial zero value for rddr** 
             uint256 timeStamp = now; // **block.timestamp of rddr**
             uint256 retainerTermination = timeStamp + retainerDuration; // **rddr termination date in UnixTime**
     
-        	RDDR = RDDR + 1; // counts new entry to RDDR
+        	RDDR = RDDR.add(1); // counts new entry to RDDR
     
         	rddr[ddrNumber] = DDR( // populate rddr data 
                 	client,
@@ -330,11 +531,11 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
     	    wetCodeWrapper storage wC = wetCode[ddr.lexID];
     	    require (now <= ddr.retainerTermination); // **program safety check / time**
     	    require(address(msg.sender) == ddr.client); // program safety check / authorization
-    	    require(ddr.paid + ddr.deliverableRate <= ddr.payCap, "payDAI: payCap exceeded"); // **program safety check / economics**
-    	    uint256 lexFee = ddr.deliverableRate / wC.lexRate;
+    	    require(ddr.paid.add(ddr.deliverableRate) <= ddr.payCap, "payDAI: payCap exceeded"); // **program safety check / economics**
+    	    uint256 lexFee = ddr.deliverableRate.div(wC.lexRate);
     	    ddr.ddrToken.transferFrom(msg.sender, ddr.provider, ddr.deliverableRate); // **executes ERC-20 transfer**
     	    ddr.ddrToken.transferFrom(msg.sender, wC.lexAddress, lexFee);
-    	    ddr.paid = ddr.paid + ddr.deliverableRate; // **tracks amount paid under rddr**
+    	    ddr.paid = ddr.paid.add(ddr.deliverableRate); // **tracks amount paid under rddr**
         	emit Paid(ddr.ddrNumber, ddr.deliverableRate, ddr.paid, msg.sender); 
     	}
 }
