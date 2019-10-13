@@ -375,7 +375,7 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
     mapping(address => uint256) public lastActionTimestamp; // **mapping lexScribe governance actions*
     
     mapping (uint256 => lexScriptWrapper) public lexScript; // **mapping registered lexScript 'wet code' templates**
-	mapping (uint256 => DDR) public rddr; // **mapping registered rddr call numbers**
+    mapping (uint256 => DDR) public rddr; // **mapping rddr call numbers**
 	
     struct lexScriptWrapper { // **LSW: Digital Dollar Retainer (DDR) lexScript templates maintained by lexDAO scribes (lexScribe)**
             address lexScribe; // **lexScribe that enscribed lexScript template into TLDR**
@@ -532,7 +532,7 @@ contract lexDAORegistry is ScribeRole { // **TLDR: lexDAO-maintained legal engin
     	    lexScriptWrapper storage lS = lexScript[ddr.lexID];
     	    require (now <= ddr.retainerTermination); // **program safety check / time**
     	    require(address(msg.sender) == ddr.client); // program safety check / authorization
-    	    require(ddr.paid.add(ddr.deliverableRate) <= ddr.payCap, "payDAI: payCap exceeded"); // **program safety check / economics**
+    	    require(ddr.paid.add(ddr.deliverableRate) <= ddr.payCap, "payDDR: payCap exceeded"); // **program safety check / economics**
     	    uint256 lexFee = ddr.deliverableRate.div(lS.lexRate);
     	    ddr.ddrToken.transferFrom(msg.sender, ddr.provider, ddr.deliverableRate); // **executes ERC-20 transfer**
     	    ddr.ddrToken.transferFrom(msg.sender, lS.lexAddress, lexFee);
