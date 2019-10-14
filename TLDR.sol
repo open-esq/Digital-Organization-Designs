@@ -367,14 +367,16 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
 	uint256 public LSW = 1; // number of lexScriptWrapper enscribed 
 	uint256 public RDDR; // number of rrdr 
 	
-	// internal lexScript references //
+	// internal lexScribe references 
 	address private summoner; // lexScribe that controls lexAgon references
 	address private lexAddress; // lexScribe-nominated lexAddress to receive associated lexID rddr transaction fee
 	uint256 private lexRate; // rate paid from payDDR transaction to associated lexAddress (lexFee)
+    
+    // mapping for lexScribe reputation governance program
     mapping(address => uint256) public reputation; // mapping lexScribe reputation points 
     mapping(address => uint256) public lastActionTimestamp; // mapping lexScribe governance action
     
-    // internal mapping for stored lexScript wrappers and registered digital dollar retainers (DDR / rddr)
+    // mapping for stored lexScript wrappers and registered digital dollar retainers (DDR / rddr)
     mapping (uint256 => lexScriptWrapper) public lexScript; // mapping registered lexScript 'wet code' templates
     mapping (uint256 => DDR) public rddr; // mapping rddr call numbers for inspection and payment
 	
