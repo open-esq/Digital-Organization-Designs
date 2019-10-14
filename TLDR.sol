@@ -360,7 +360,7 @@ TLDR CONTRACT
 contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enforce digital transactions with legal and ethereal security
     using SafeMath for uint256;
     
-    // lexAgonDAO address reference for lexScribe (defined below) reputation governance fees
+        // lexAgonDAO references for lexScribe (defined below) reputation governance fees
 	address payable public lexAgonDAO;
 	
 	// counters for lexScribe lexScriptWrapper and registered DDR (rddr)
@@ -369,8 +369,8 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
 	
 	// internal lexScribe references 
 	address private summoner; // lexScribe that controls lexAgon references
-	address private lexAddress; // lexScribe-nominated lexAddress to receive associated lexID rddr transaction fee
-	uint256 private lexRate; // rate paid from payDDR transaction to associated lexAddress (lexFee)
+	address private lexAddress; // lexScribe-nominated (0x) lexAddress to receive associated lexID rddr transaction ERC-20 fee
+	uint256 private lexRate; // rate paid from payDDR transaction to associated (0x) lexAddress (lexFee)
     
     // mapping for lexScribe reputation governance program
     mapping(address => uint256) public reputation; // mapping lexScribe reputation points 
@@ -378,19 +378,19 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
     
     // mapping for stored lexScript wrappers and registered digital dollar retainers (DDR / rddr)
     mapping (uint256 => lexScriptWrapper) public lexScript; // mapping registered lexScript 'wet code' templates
-    mapping (uint256 => DDR) public rddr; // mapping rddr call numbers for inspection and payment
+    mapping (uint256 => DDR) public rddr; // mapping rddr call numbers for inspection and digital dollar payment
 	
     struct lexScriptWrapper { // LSW: rddr lexScript templates maintained by lexDAO scribes (lexScribe)
-            address lexScribe; // lexScribe ethereum (0x) address that enscribed lexScript template into TLDR
-            address lexAddress; // ethereum address to receive lexScript template lexFee
+            address lexScribe; // lexScribe (0x) address that enscribed lexScript template into TLDR
+            address lexAddress; // (0x) address to receive lexScript template lexFee
             string templateTerms; // lexScript template terms to wrap rddr for legal security
             uint256 lexID; // ID number to reference in rddr to inherit lexScript wrapper
             uint256 lexRate; // divisible rate for lexFee in ddrToken type per rddr payment made thereunder / e.g., 100 = 1% lexFee on rddr payDDR payment transaction
         } 
         
 	struct DDR { 
-        	address client; // rddr client ethereum (0x) address
-        	address provider; // provider ethereum (0x) address that receives payments in exchange for goods or services
+        	address client; // rddr client (0x) address
+        	address provider; // provider (0x) address that receives payments in exchange for goods or services
         	IERC20 ddrToken; // ERC-20 digital token (0x) address used to transfer value on ethereum under rddr / e.g., DAI 'digital dollar' - 0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359
         	string deliverable; // goods or services (deliverable) retained for benefit of ethereum payments
         	string governingLawForum; // choice of law and forum for retainer relationship (or similar legal wrapper/context description)
@@ -407,7 +407,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
 	constructor(string memory TLDRTemplate, uint256 TLDRlexRate, address _summoner, address TLDRlexAddress, address payable _lexAgonDAO) public { // deploys TLDR contract with designated lexRate and lexAddress (0x) and stores base template "0" (lexID) for rddr lexScript
 	        address LEXScribe = msg.sender; // TLDR creator is initial lexScribe
 	        summoner = _summoner; // initial lexScribe is lexAgon summoner
-	        lexAgonDAO = _lexAgonDAO; // lexAgonDAO address as instantiated
+	        lexAgonDAO = _lexAgonDAO; // lexAgonDAO (0x) address as deployed
 	        uint256 lexID = 0; // default lexID for constructor / general rddr reference
 	        lexScript[lexID] = lexScriptWrapper( // populate default '0' lexScript data for reference in LSW
                 	LEXScribe,
@@ -483,7 +483,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
             emit Enscribed(lexID, lexScribe); 
 	    }
 	    
-	// lexScribes can update registered lexScript wrappers with newTemplateTerms and newLexAddress
+	// lexScribes can update registered lexScript wrappers with newTemplateTerms and (0x) newLexAddress
 	function editLEXScriptWrapper(uint256 lexID, string memory newTemplateTerms, address newLEXAddress) public {
 	        lexScriptWrapper storage lS = lexScript[lexID];
 	        require(address(msg.sender) == lS.lexScribe); // program safety check / authorization
@@ -539,7 +539,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
         }
         
     // pay registered DDR on TLDR
-	function payDDR(uint256 ddrNumber) public { // forwards approved ddrToken deliverableRate amount to provider ethereum address / lexFee for attached lexID lexAddress
+	function payDDR(uint256 ddrNumber) public { // forwards approved ddrToken deliverableRate amount to provider (0x) address / lexFee for attached lexID lexAddress
     	    DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
     	    lexScriptWrapper storage lS = lexScript[ddr.lexID]; // retrieve LSW data
     	    require (now <= ddr.retainerTermination); // program safety check / time
@@ -547,7 +547,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
     	    require(ddr.paid.add(ddr.deliverableRate) <= ddr.payCap, "payDDR: payCap exceeded"); // program safety check / economics
     	    uint256 lexFee = ddr.deliverableRate.div(lS.lexRate); // derive lexFee from transaction value
     	    ddr.ddrToken.transferFrom(msg.sender, ddr.provider, ddr.deliverableRate); // executes ERC-20 transfer to rddr provider
-    	    ddr.ddrToken.transferFrom(msg.sender, lS.lexAddress, lexFee); // executes ERC-20 transfer of lexFee to lexAddress identified in lexID
+    	    ddr.ddrToken.transferFrom(msg.sender, lS.lexAddress, lexFee); // executes ERC-20 transfer of lexFee to (0x) lexAddress identified in lexID
     	    ddr.paid = ddr.paid.add(ddr.deliverableRate); // tracks total amount paid under rddr (sans lexFee)
         	emit Paid(ddr.ddrNumber, ddr.lexID, ddr.deliverableRate, ddr.paid, msg.sender); 
     	}
