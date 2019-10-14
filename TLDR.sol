@@ -515,7 +515,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
     	    uint256 payCap,
     	    uint256 lexID) public {
             require(deliverableRate <= payCap, "registerDDR: deliverableRate cannot exceed payCap"); // program safety check / economics
-            require(ddrToken.transferFrom(client, address(this), deliverableRate));
+            require(ddrToken.transferFrom(client, address(this), payCap));
             uint256 ddrNumber = RDDR.add(1); // reflects new rddr value for tracking payments
             uint256 paid = 0; // initial zero value for rddr
             uint256 timeStamp = now; // block.timestamp of rddr
@@ -548,7 +548,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: market registry to wrap and enf
         }
     
     // rddr parties can initiate dispute and lock deliverableRate in TLDR until resolution by reputable lexScribe
-    function resolveDDR(uint256 ddrNumber, uint256 clientAwardRate, uint256 providerAwardRate) public {
+    function resolveDDR(uint256 ddrNumber, uint8 clientAwardRate, uint8 providerAwardRate) public {
         require(isReputable(msg.sender));
         require(DDRdisputes[ddrNumber] = true);
         DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
