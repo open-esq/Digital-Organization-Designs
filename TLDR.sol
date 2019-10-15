@@ -368,6 +368,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     // mapping for lexScribe reputation governance program
     mapping(address => uint256) public reputation; // mapping lexScribe reputation points 
     mapping(address => uint256) public lastActionTimestamp; // mapping lexScribe governance action
+    mapping(address => uint256) public lastSuperActionTimestamp; // mapping lexScribe governance action
     
     // mapping for stored lexScript wrappers and registered digital dollar retainers (DDR / rddr)
     mapping (uint256 => lexScriptWrapper) public lexScript; // mapping registered lexScript 'wet code' templates
@@ -420,7 +421,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     /***************
     TLDR GOVERNANCE FUNCTIONS
     ***************/
-     // restricts TLDR reputation governance function calls to once per day (cooldown)
+    // restricts TLDR reputation governance function calls to once per day (cooldown)
     modifier cooldown() {
             require(now.sub(lastActionTimestamp[msg.sender]) > 1 days);
             _;
@@ -429,12 +430,12 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
         
     // restricts TLDR reputation staking and lexAgon governance function calls to once per 120 days (icedown)
     modifier icedown() {
-            require(now.sub(lastActionTimestamp[msg.sender]) > 120 days);
+            require(now.sub(lastSuperActionTimestamp[msg.sender]) > 120 days);
             _;
-            lastActionTimestamp[msg.sender] = now;
+            lastSuperActionTimestamp[msg.sender] = now;
         }
         
-    // lexScribes can stake ether (Ξ) value for TLDR reputation and special TLDR function access
+    // lexScribes can stake ether (Ξ) value for TLDR reputation and special TLDR function access (TLDR write priveleges, dispute resolution) 
     function stakeReputation() payable public onlyScribe icedown {
             require(msg.value == 0.1 ether);
             reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '10' max value
@@ -461,7 +462,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
             reputation[repairedLexScribe] = reputation[repairedLexScribe].add(1); // repair reputation by "1"
         }
     
-    // fully reputable lexScribe can update beneficiary lexAgonDAO (0x) address for reputation governance stakes (Ξ)   
+    // fully reputable lexScribe can update beneficiary lexAgonDAO (0x) address for reputation governance stakes (Ξ) within icedown period
     function updateLexAgonDAO(address payable newLexAgon) icedown public {
             require(newLexAgon != address(0)); // program safety check / newLexAgon cannot be "0" address
             require(reputation[msg.sender] == 3);
