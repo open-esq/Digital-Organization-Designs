@@ -1,5 +1,5 @@
 /*
-|| THE LEXDAO REGISTRY (TLDR) ||
+|| THE LEXDAO REGISTRY (TLDR) || version 0.1
 
 DEAR MSG.SENDER(S):
 
@@ -410,11 +410,11 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
         	bool disputed; // tracks digital dispute status from client or provider / if called, locks rddr payments for reputable lexScribe resolution
     	}
     	
-	constructor(string memory tldrTerms, uint256 tldrLexRate, address tldrLexAddress, address payable tldrlexDAO) public { // deploys TLDR contract with designated lexRate and lexAddress (0x) and stores base template "0" (lexID) for rddr lexScript
+	constructor(string memory tldrTerms, uint256 tldrLexRate, address tldrLexAddress, address payable tldrLexDAO) public { // deploys TLDR contract with designated lexRate and lexAddress (0x) and stores base template "0" (lexID) for rddr lexScript
 	        address lexScribe = msg.sender; // TLDR summoner is lexScribe
 	        reputation[msg.sender] = 3; // sets TLDR summoner lexScribe reputation to '3' max value
-	        lexDAO = tldrlexDAO; // lexDAO (0x) address as deployed
-	        uint256 lexID = 0; // default lexID for constructor / general rddr reference
+	        lexDAO = tldrLexDAO; // lexDAO (0x) address as deployed
+	        uint256 lexID = 1; // default lexID for constructor / general rddr reference
 	        uint256 lexVersion = 0; // default lexID for constructor / general rddr reference
 	        lexScript[lexID] = lexScriptWrapper( // populate default '0' lexScript data for reference in LSW
                 	lexScribe,
@@ -430,7 +430,6 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     event Signed(uint256 indexed lexID, uint256 indexed dcNumber, address indexed signatory);
 	event Registered(uint256 indexed ddrNumber, uint256 indexed lexID); // triggered on successful rddr 
 	event Paid(uint256 indexed ddrNumber, uint256 indexed lexID); // triggered on successful rddr payments
-    
     
     /***************
     TLDR GOVERNANCE FUNCTIONS
@@ -473,6 +472,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
             require(isReputable(msg.sender)); // lexScribe must be reputable
             require(msg.sender != repairedLexScribe); // program governance check / cannot repair own reputation
             require(reputation[repairedLexScribe] < 3); // cannot repair fully reputable lexScribe
+            require(reputation[repairedLexScribe] > 0); // cannot repair disreputable lexScribe / induct non-staked lexScribe
             reputation[repairedLexScribe] = reputation[repairedLexScribe].add(1); // repair reputation by "1"
         }
     
@@ -582,12 +582,12 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
                 	deliverable,
                 	governingLawForum,
                 	ddrNumber,
+                	lexID,
                 	now,
                 	retainerTermination,
                 	deliverableRate,
                 	0,
                 	payCap,
-                	lexID,
                 	false);
         	 
             emit Registered(ddrNumber, lexID); 
