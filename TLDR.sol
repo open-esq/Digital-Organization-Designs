@@ -358,8 +358,8 @@ TLDR CONTRACT
 contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap and enforce transactions with legal and ethereal security
     using SafeMath for uint256;
     
-    // lexAgonDAO references for lexScribe (defined below) reputation governance fees
-	address payable public lexAgonDAO;
+    // lexDAO references for lexScribe (defined below) reputation governance fees
+	address payable public lexDAO;
 	
 	// counters for lexScribe lexScriptWrapper and registered DDR (rddr) / DC (rdc)
 	uint256 public LSW = 1; // number of lexScriptWrapper enscribed 
@@ -410,10 +410,10 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
         	bool disputed; // tracks digital dispute status from client or provider / if called, locks rddr payments for reputable lexScribe resolution
     	}
     	
-	constructor(string memory tldrTerms, uint256 tldrLexRate, address tldrLexAddress, address payable tldrLexAgonDAO) public { // deploys TLDR contract with designated lexRate and lexAddress (0x) and stores base template "0" (lexID) for rddr lexScript
+	constructor(string memory tldrTerms, uint256 tldrLexRate, address tldrLexAddress, address payable tldrlexDAO) public { // deploys TLDR contract with designated lexRate and lexAddress (0x) and stores base template "0" (lexID) for rddr lexScript
 	        address lexScribe = msg.sender; // TLDR summoner is lexScribe
 	        reputation[msg.sender] = 3; // sets TLDR summoner lexScribe reputation to '3' max value
-	        lexAgonDAO = tldrLexAgonDAO; // lexAgonDAO (0x) address as deployed
+	        lexDAO = tldrlexDAO; // lexDAO (0x) address as deployed
 	        uint256 lexID = 0; // default lexID for constructor / general rddr reference
 	        uint256 lexVersion = 0; // default lexID for constructor / general rddr reference
 	        lexScript[lexID] = lexScriptWrapper( // populate default '0' lexScript data for reference in LSW
@@ -442,9 +442,9 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
             lastActionTimestamp[msg.sender] = now;
         }
         
-    // restricts TLDR reputation staking and lexAgon governance function calls to once per 120 days (icedown)
+    // restricts TLDR reputation staking and lexDAO governance function calls to once per 120 days (icedown)
     modifier icedown() {
-            require(now.sub(lastSuperActionTimestamp[msg.sender]) > 120 days);
+            require(now.sub(lastSuperActionTimestamp[msg.sender]) > 90 days);
             _;
             lastSuperActionTimestamp[msg.sender] = now;
         }
@@ -453,7 +453,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     function stakeReputation() payable public onlyScribe icedown {
             require(msg.value == 0.1 ether);
             reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '3' max value
-            address(lexAgonDAO).transfer(msg.value); // forwards staked value (Ξ) to lexAgonDAO address
+            address(lexDAO).transfer(msg.value); // forwards staked value (Ξ) to lexDAO address
         }
         
     // public check on lexScribe reputation status
@@ -476,11 +476,11 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
             reputation[repairedLexScribe] = reputation[repairedLexScribe].add(1); // repair reputation by "1"
         }
     
-    // fully reputable lexScribe can update beneficiary lexAgonDAO (0x) address for reputation governance stakes (Ξ) within icedown period
-    function updateLexAgonDAO(address payable newLexAgon) icedown public {
-            require(newLexAgon != address(0)); // program safety check / newLexAgon cannot be "0" address
+    // fully reputable lexScribe can update beneficiary lexDAO (0x) address for reputation governance stakes (Ξ) within icedown period
+    function updatelexDAO(address payable newlexDAO) icedown public {
+            require(newlexDAO != address(0)); // program safety check / newlexDAO cannot be "0" address
             require(reputation[msg.sender] == 3);
-            lexAgonDAO = newLexAgon;
+            lexDAO = newlexDAO;
         }
         
     /***************
