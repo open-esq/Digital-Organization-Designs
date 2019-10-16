@@ -457,7 +457,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
         }
         
     // lexScribes can stake ether (Ξ) value for TLDR reputation and special TLDR function access (TLDR-write privileges, ethereal dispute resolution) 
-    function stakeReputationETH() payable public onlyScribe icedown {
+    function stakeReputation() payable public onlyScribe icedown {
             require(msg.value == 0.1 ether); // tenth of ether (Ξ) for staking reputation to lexDAO
             reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '3' max value
             address(lexDAO).transfer(msg.value); // forwards staked value (Ξ) to designated lexDAO (0x) address
@@ -516,10 +516,10 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
             symbol = "LEX";
             uint256 mintAmount = 10000000000000000000;
             decimals = 18;
-            balanceOf[msg.sender] = mintAmount;
+            balanceOf[msg.sender] = balanceOf[msg.sender].add(mintAmount);
             totalSupply = totalSupply.add(mintAmount);
 
-            emit Transfer(address(0), msg.sender, totalSupply);
+            emit Transfer(address(0), msg.sender, mintAmount);
 	    }
 	    
 	// lexScribes can update TLDR lexScript wrappers with new templateTerms and (0x) newLexAddress / automatically versions up LSW
