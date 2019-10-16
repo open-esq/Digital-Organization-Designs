@@ -1,6 +1,5 @@
 /*
 || THE LEXDAO REGISTRY (TLDR) || version 0.1
-~~InterNative Commons // Collective Patterns ;-000
 
 DEAR MSG.SENDER(S):
 
@@ -362,6 +361,12 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     // lexDAO references for lexDAOscribe (lexScribe) reputation governance fees
 	address payable public lexDAO;
 	
+	// lexToken ERC-20 token references for public inspection
+	string public name;
+	string public symbol;
+	uint8 public decimals;
+	uint256 public totalSupply;
+	
 	// counters for lexScribe lexScriptWrapper and registered DDR (rddr) / DC (rdc)
 	uint256 public LSW = 1; // number of lexScriptWrapper enscribed 
 	uint256 public RDC; // number of rdc
@@ -369,6 +374,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
 	
     // mapping for lexScribe reputation governance program
     mapping(address => uint256) public reputation; // mapping lexScribe reputation points 
+    mapping (address => uint256) public balanceOf; // mapping lexscribe LEX token awards for contributions
     mapping(address => uint256) public lastActionTimestamp; // mapping lexScribe governance actions (cooldown)
     mapping(address => uint256) public lastSuperActionTimestamp; // mapping special lexScribe governance actions (icedown)
     
@@ -431,6 +437,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     event Signed(uint256 indexed lexID, uint256 indexed dcNumber, address indexed signatory); // triggered on successful lexScript creation / edits to LSW 
 	event Registered(uint256 indexed ddrNumber, uint256 indexed lexID); // triggered on successful rddr 
 	event Paid(uint256 indexed ddrNumber, uint256 indexed lexID); // triggered on successful rddr payments
+	event Transfer(address indexed from, address indexed to, uint256 value); // IERC20 logic / triggered on successful LEX mint / transfers
     
     /***************
     TLDR GOVERNANCE FUNCTIONS
@@ -450,7 +457,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
         }
         
     // lexScribes can stake ether (Ξ) value for TLDR reputation and special TLDR function access (TLDR-write privileges, ethereal dispute resolution) 
-    function stakeReputation() payable public onlyScribe icedown {
+    function stakeReputationETH() payable public onlyScribe icedown {
             require(msg.value == 0.1 ether); // tenth of ether (Ξ) for staking reputation to lexDAO
             reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '3' max value
             address(lexDAO).transfer(msg.value); // forwards staked value (Ξ) to designated lexDAO (0x) address
@@ -487,7 +494,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     /***************
     LEXSCRIBE FUNCTIONS
     ***************/
-    // reputable lexScribes can register lexScript legal wrappers on TLDR and program ERC-20 lexFees associated with lexID
+    // reputable lexScribes can register lexScript legal wrappers on TLDR and program ERC-20 lexFees associated with lexID / receive LEX award
 	function writeLexScript(string memory templateTerms, uint256 lexRate, address lexAddress) public {
 	        require(isReputable(msg.sender)); // program governance check / lexScribe must be reputable 
 	        uint256 lexID = LSW.add(1); // reflects new lexScript value for tracking lexScript wrappers
@@ -501,8 +508,18 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
                 	lexID,
                 	lexVersion,
                 	lexRate);
-                	
+            
             emit Enscribed(lexID, lexVersion, msg.sender); 
+            
+            // native ERC-20 LEX token award for contributed lexScript, "work"
+            name = "lexDAO";
+            symbol = "LEX";
+            uint256 mintAmount = 10000000000000000000;
+            decimals = 18;
+            balanceOf[msg.sender] = mintAmount;
+            totalSupply = totalSupply.add(mintAmount);
+
+            emit Transfer(address(0), msg.sender, totalSupply);
 	    }
 	    
 	// lexScribes can update TLDR lexScript wrappers with new templateTerms and (0x) newLexAddress / automatically versions up LSW
@@ -558,7 +575,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
                 	
             emit Signed(dc.lexID, dcNumber, msg.sender);
     	}
-    	
+    
 	// public can register DDR with TLDR lexScripts (lexID) 
 	function registerDDR( // rddr 
     	    address client,
