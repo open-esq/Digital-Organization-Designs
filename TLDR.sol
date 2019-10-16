@@ -522,7 +522,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
             emit Transfer(address(0), msg.sender, mintAmount);
 	    }
 	    
-	// lexScribes can update TLDR lexScript wrappers with new templateTerms and (0x) newLexAddress / automatically versions up LSW
+	// lexScribes can update TLDR lexScript wrappers with new templateTerms and (0x) newLexAddress / versions up LSW
 	function editLexScript(uint256 lexID, string memory templateTerms, address lexAddress) public {
 	        lexScriptWrapper storage lS = lexScript[lexID]; // retrieve rdc data
 	        require(address(msg.sender) == lS.lexScribe); // program safety check / authorization
