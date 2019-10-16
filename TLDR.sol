@@ -570,6 +570,7 @@ contract lexDAORegistry is ScribeRole { // TLDR: internet-native market to wrap 
     	    uint256 deliverableRate,
     	    uint256 payCap,
     	    uint256 lexID) public {
+    	    require(lexID != (0)); // program safety check
             require(deliverableRate <= payCap); // program safety check / economics
             uint256 ddrNumber = RDDR.add(1); // reflects new rddr value for inspection and digital payments
             uint256 retainerTermination = now.add(retainerDuration); // rddr termination date in UnixTime, "now" block.timestamp + retainerDuration
