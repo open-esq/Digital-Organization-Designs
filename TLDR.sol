@@ -723,12 +723,12 @@ contract lexDAORegistry is ScribeRole, ERC20 { // TLDR: internet-native market t
 	reputation[repairedLexScribe] = reputation[repairedLexScribe].add(1); // repair reputation by "1"
     }
     
-    // fully reputable lexScribe can update beneficiary lexDAO (0x) address for reputation governance stakes (Ξ) within icedown period
-    function updatelexDAO(address payable newlexDAO) icedown public {
-        require(newlexDAO != address(0)); // program safety check / newlexDAO cannot be "0" burn address
+    // fully reputable lexScribe can update lexDAO (0x) address receiving reputation governance stakes (Ξ) within icedown period
+    function updateLexDAO(address payable newLexDAO) icedown public {
+        require(newLexDAO != address(0)); // program safety check / newLexDAO cannot be "0" burn address
         require(reputation[msg.sender] == 3); // program governance check / only fully reputable lexScribes can update lexDAO (0x) address
         
-	lexDAO = newlexDAO; // update lexDAO (0x) address
+	lexDAO = newLexDAO; // update lexDAO (0x) address
     }
         
     /***************
