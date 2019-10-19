@@ -862,6 +862,7 @@ contract lexDAORegistry is ScribeRole, ERC20 { // TLDR: internet-native market t
 	require(ddr.disputed == false); // program safety check / status
         require (now <= ddr.retainerTermination); // program safety check / time
         require(msg.sender == ddr.client || msg.sender == ddr.provider); // program safety check / authorization
+	require(ddr.paid < ddr.payCap); // program safety check / economics
         
 	ddr.disputed = true; // updates rddr value to reflect dispute status, "true"
     }
