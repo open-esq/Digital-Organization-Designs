@@ -1,5 +1,5 @@
 /*
-|| THE LEXDAO REGISTRY (TLDR) || version 0.1
+|| THE LEXDAO REGISTRY (TLDR) || version 0.2
 
 DEAR MSG.SENDER(S):
 
@@ -577,17 +577,17 @@ contract ERC20 is Context, IERC20 {
 /***************
 TLDR CONTRACT
 ***************/
-contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market to wrap & enforce common deal patterns with legal & ethereal security
+contract TLDR is ScribeRole, ERC20 { // TLDR: internet-native market to wrap & enforce common deal patterns with legal & ethereal security
     using SafeMath for uint256;
     
     // lexDAO references for lexDAOscribe (lexScribe) reputation governance fees (Ξ)
     address payable public lexDAO;
 	
-    // lexDAO (LEX) ERC-20 token references for public inspection
-    address public lexContractAddress = address(this);
-    ERC20 lexContract = ERC20(lexContractAddress); 
+    // TLDR (LEX) ERC-20 token references for public inspection
+    address public tldrAddress = address(this);
+    ERC20 tldrToken = ERC20(tldrAddress); 
     
-    string public name = "lexDAO";
+    string public name = "TLDR";
     string public symbol = "LEX";
     uint8 public decimals = 18;
 	
@@ -630,7 +630,6 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
         address provider; // provider (0x) address that receives ERC-20 payments in exchange for goods or services
         ERC20 ddrToken; // ERC-20 digital token (0x) address used to transfer digital value on ethereum under rddr / e.g., DAI 'digital dollar' - 0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359
         string deliverable; // goods or services (deliverable) retained for benefit of ethereum payments
-        string governingLawForum; // choice of law and forum for retainer relationship (or similar legal wrapper/context description)
         uint256 lexID; // lexID number reference to include lexScriptWrapper for legal security / default '1' for generalized rddr lexScript template
         uint256 ddrNumber; // rddr number generated on DDR registration / identifies rddr for payDDR function calls
         uint256 timeStamp; // block.timestamp ("now") of registration used to calculate retainerTermination UnixTime
@@ -638,17 +637,18 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
         uint256 deliverableRate; // rate for rddr deliverables in digital dollar wei amount / 1 = 1000000000000000000
         uint256 paid; // tracking amount of designated ERC-20 digital value paid under rddr in wei amount for payCap logic
         uint256 payCap; // value cap limit on rddr payments in wei amount 
+        bool confirmed; // tracks provider countersignature status
         bool disputed; // tracks digital dispute status from client or provider / if called, locks remainder of escrow rddr payments for reputable lexScribe resolution
     }
     	
     constructor(string memory tldrTerms, uint256 tldrLexRate, address tldrLexAddress, address payable tldrLexDAO) public { // deploys TLDR contract with designated lexRate / lexAddress (0x) & stores base lexScript template "1" (lexID)
 	address lexScribe = msg.sender; // TLDR summoner is lexScribe
-	reputation[msg.sender] = 3; // sets TLDR summoner lexScribe reputation to '3' max value on construction
-	lexDAO = tldrLexDAO; // lexDAO (0x) address as constructed
+	reputation[msg.sender] = 3; // sets TLDR summoner lexScribe reputation to '3' max value
+	lexDAO = tldrLexDAO; // sets initial lexDAO (0x) address 
 	uint256 lexID = 1; // default lexID for constructor / general rddr reference, 'tldrTerms'
 	uint256 lexVersion = 0; // initialized version of tldrTerms
 	    
-	    lexScript[lexID] = lexScriptWrapper( // populate default '1' lexScript data for reference in LSW and rddr
+	    lexScript[lexID] = lexScriptWrapper( // populates default '1' lexScript data for reference in LSW and rddr
                 lexScribe,
                 tldrLexAddress,
                 tldrTerms,
@@ -660,8 +660,11 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
     // TLDR Contract Events
     event Enscribed(uint256 indexed lexID, uint256 indexed lexVersion, address indexed lexScribe); // triggered on successful LSW creation / edits to LSW
     event Signed(uint256 indexed lexID, uint256 indexed dcNumber, address indexed signatory); // triggered on successful DC creation / edits to DC 
-    event Registered(uint256 indexed ddrNumber, uint256 indexed lexID); // triggered on successful rddr 
+    event Registered(uint256 indexed ddrNumber, uint256 indexed lexID, address indexed client); // triggered on successful rddr 
+    event Confirmed(uint256 indexed ddrNumber, uint256 indexed lexID, address indexed provider); // triggered on succesfful rddr confirmation
     event Paid(uint256 indexed ddrNumber, uint256 indexed lexID); // triggered on successful rddr payments
+    event Disputed(uint256 indexed ddrNumber); // triggered on rddr dispute
+    event Resolved(uint256 indexed ddrNumber); // triggered on successful rddr dispute resolution
     
     /***************
     TLDR GOVERNANCE FUNCTIONS
@@ -701,14 +704,14 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
     	require(msg.sender == lexDAO);
         require(newLexDAO != address(0)); // program safety check / newLexDAO cannot be "0" burn address
         
-	lexDAO = newLexDAO; // update lexDAO (0x) address
+	lexDAO = newLexDAO; // updates lexDAO (0x) address
     }
         
-    // lexScribes can stake ether (Ξ) value for TLDR reputation and special TLDR function access (TLDR-write privileges, rddr dispute resolution) 
+    // lexScribes can stake ether (Ξ) value for TLDR reputation and special TLDR function access (TLDR write privileges, rddr dispute resolution role) 
     function stakeETHreputation() payable public onlyScribe icedown {
         require(msg.value == 0.1 ether); // tenth of ether (Ξ) fee for staking reputation to lexDAO
         
-	reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '3' max value, 'three strikes, you're out'
+	reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '3' max value, 'three strikes, you're out' buffer
         
 	address(lexDAO).transfer(msg.value); // forwards staked value (Ξ) to designated lexDAO (0x) address
     }
@@ -717,7 +720,7 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
     function stakeLEXreputation() public onlyScribe icedown { 
 	_burn(_msgSender(), 10000000000000000000); // 10 LEX burned 
         
-	reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '3' max value, 'three strikes, you're out'
+	reputation[msg.sender] = 3; // sets / refreshes lexScribe reputation to '3' max value, 'three strikes, you're out' buffer
     }
          
     // public check on lexScribe reputation status
@@ -730,7 +733,7 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
         require(isReputable(msg.sender)); // program governance check / lexScribe must be reputable
         require(msg.sender != reducedLexScribe); // program governance check / cannot reduce own reputation
         
-	reputation[reducedLexScribe] = reputation[reducedLexScribe].sub(1); // reduce referenced lexScribe reputation by "1"
+	reputation[reducedLexScribe] = reputation[reducedLexScribe].sub(1); // reduces referenced lexScribe reputation by "1"
     }
         
     // reputable lexScribes can repair each other's reputation within cooldown period
@@ -740,11 +743,11 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
         require(reputation[repairedLexScribe] < 3); // program governance check / cannot repair fully reputable lexScribe
         require(reputation[repairedLexScribe] > 0); // program governance check / cannot repair disreputable lexScribe / induct non-staked lexScribe
         
-	reputation[repairedLexScribe] = reputation[repairedLexScribe].add(1); // repair reputation by "1"
+	reputation[repairedLexScribe] = reputation[repairedLexScribe].add(1); // repairs reputation by "1"
     }
        
     /***************
-    LEXSCRIBE FUNCTIONS
+    TLDR LEXSCRIBE FUNCTIONS
     ***************/
     // reputable lexScribes can register lexScript legal wrappers on TLDR and program ERC-20 lexFees associated with lexID / receive LEX mint, "1"
     function writeLexScript(string memory templateTerms, uint256 lexRate, address lexAddress) public {
@@ -762,7 +765,7 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
                 lexVersion,
                 lexRate);
                 
-        _mint(msg.sender, 1000000000000000000); // mint lexScribe "1" LEX for contribution to TLDR
+        _mint(msg.sender, 1000000000000000000); // mints lexScribe "1" LEX for contribution to TLDR
 	
         emit Enscribed(lexID, lexVersion, msg.sender); 
     }
@@ -771,11 +774,11 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
     function editLexScript(uint256 lexID, string memory templateTerms, address lexAddress) public {
 	lexScriptWrapper storage lS = lexScript[lexID]; // retrieve LSW data
 	
-	require(address(msg.sender) == lS.lexScribe); // program safety check / authorization 
+	require(msg.sender == lS.lexScribe); // program safety check / authorization 
 	
 	uint256 lexVersion = lS.lexVersion.add(1); // updates lexVersion 
 	    
-	    lexScript[lexID] = lexScriptWrapper( // populate updated lexScript data for rddr / rdc usage
+	    lexScript[lexID] = lexScriptWrapper( // populates updated lexScript data for rddr / rdc usage
                 msg.sender,
                 lexAddress,
                 templateTerms,
@@ -787,24 +790,25 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
     }
 
     /***************
-    MARKET FUNCTIONS
+    TLDR MARKET FUNCTIONS
     ***************/
     // public can sign and associate (0x) ethereum identity with lexScript digital covenant wrapper 
     function signDC(uint256 lexID, string memory signatureDetails) public { // sign Digital Covenant with (0x) address
+	require(lexID > (0)); // program safety check
+	require(lexID <= LSW); // program safety check
 	lexScriptWrapper storage lS = lexScript[lexID]; // retrieve LSW data
 	
 	uint256 dcNumber = RDC.add(1); // reflects new rdc value for public inspection and signature revocation
-	bool revoked = false; // initialized value of rdc revocation status, "false"
 	RDC = RDC.add(1); // counts new entry to RDC
 	        
-	    rdc[dcNumber] = DC( // populate rdc data
+	    rdc[dcNumber] = DC( // populates rdc data
                 msg.sender,
                 lS.templateTerms,
                 signatureDetails,
                 lexID,
                 dcNumber,
-                now,
-                revoked);
+                now, 
+                false);
                 	
         emit Signed(lexID, dcNumber, msg.sender);
     }
@@ -813,40 +817,38 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
     function revokeDC(uint256 dcNumber) public { // revoke Digital Covenant signature with (0x) address
 	DC storage dc = rdc[dcNumber]; // retrieve rdc data
 	
-	require(address(msg.sender) == dc.signatory); // program safety check / authorization
+	require(msg.sender == dc.signatory); // program safety check / authorization
 	    
-	    rdc[dcNumber] = DC(// update rdc data
+	    rdc[dcNumber] = DC(// updates rdc data
                 msg.sender,
-                "Signature Revoked", // replace Digital Covenant terms with revocation message
+                "Signature Revoked", // replaces Digital Covenant terms with revocation message
                 dc.signatureDetails,
                 dc.lexID,
                 dc.dcNumber,
-                now,
+                now, // updates to revocation timestamp
                 true);
                 	
         emit Signed(dc.lexID, dcNumber, msg.sender);
     }
     
-    // public can register DDR with TLDR lexScripts (lexID) 
+    // rddr client can register DDR with TLDR lexScripts (lexID) 
     function registerDDR( // rddr 
     	address client,
     	address provider,
     	ERC20 ddrToken,
     	string memory deliverable,
-    	string memory governingLawForum,
         uint256 retainerDuration,
     	uint256 deliverableRate,
     	uint256 payCap,
     	uint256 lexID) public {
-    	require(lexID != (0)); // program safety check 
+    	require(lexID > (0)); // program safety check 
+    	require(lexID <= LSW); // program safety check 
         require(deliverableRate <= payCap); // program safety check / economics
-	require(msg.sender == provider); // program safety check / authorization / provider countersigns client payCap TLDR approval for effective rddr
+	require(msg.sender == client); // program safety check / authorization / client signs TLDR transaction registering ddr offer / designates provider for confirmation
         
-	uint256 ddrNumber = RDDR.add(1); // reflects new rddr value for inspection and client digital payments
+	uint256 ddrNumber = RDDR.add(1); // reflects new rddr value for inspection and escrow management
         uint256 retainerTermination = now.add(retainerDuration); // rddr termination date in UnixTime, "now" block.timestamp + retainerDuration
-        
-	ddrToken.transferFrom(client, address(this), payCap); // escrows payCap amount in approved ddrToken into TLDR for rddr payments and/or lexScribe resolution
-        
+
 	RDDR = RDDR.add(1); // counts new entry to RDDR
     
             rddr[ddrNumber] = DDR( // populate rddr data 
@@ -854,7 +856,6 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
                 provider,
                 ddrToken,
                 deliverable,
-                governingLawForum,
                 lexID,
                 ddrNumber,
                 now, // block.timestamp, "now"
@@ -862,70 +863,91 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
                 deliverableRate,
                 0,
                 payCap,
+                false,
                 false);
         	 
-        emit Registered(lexID, ddrNumber); 
+        emit Registered(ddrNumber, lexID, msg.sender); 
+    }
+    
+    // rddr provider can confirm rddr offer and countersign ddrNumber / trigger escrow deposit from rddr client in approved payCap amount
+    function confirmDDR(uint256 ddrNumber) public {
+        DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
+        
+        require(ddr.confirmed == false); // program safety check / status
+        require(now <= ddr.retainerTermination); // program safety check / time
+        require(msg.sender == ddr.provider); // program safety check / authorization
+        
+        ddr.confirmed = true; // reflect rddr provider countersignature
+        
+        ddr.ddrToken.transferFrom(ddr.client, address(this), ddr.payCap); // escrows payCap amount in approved ddrToken into TLDR for rddr payments and/or lexScribe resolution
+    
+        emit Confirmed(ddrNumber, ddr.lexID, msg.sender);
     }
          
-    // rddr client can delegate performance management function and beneficiary status (designed for limited grant applications, milestone-watching)
+    // rddr client can call to delegate role
     function delegateDDRclient(uint256 ddrNumber, address clientDelegate) public {
         DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
         
         require(ddr.disputed == false); // program safety check / status
-        require (now <= ddr.retainerTermination); // program safety check / time
+        require(now <= ddr.retainerTermination); // program safety check / time
         require(msg.sender == ddr.client); // program safety check / authorization
         require(ddr.paid < ddr.payCap); // program safety check / economics
         
-        ddr.client = clientDelegate; // update rddr client address to delegate
+        ddr.client = clientDelegate; // updates rddr client address to delegate
     }
     
     // rddr parties can initiate dispute and lock escrowed remainder of rddr payCap in TLDR until resolution by reputable lexScribe
     function disputeDDR(uint256 ddrNumber) public {
         DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
         
+        require(ddr.confirmed == true); // program safety check / status
 	require(ddr.disputed == false); // program safety check / status
-        require (now <= ddr.retainerTermination); // program safety check / time
+        require(now <= ddr.retainerTermination); // program safety check / time
         require(msg.sender == ddr.client || msg.sender == ddr.provider); // program safety check / authorization
 	require(ddr.paid < ddr.payCap); // program safety check / economics
         
 	ddr.disputed = true; // updates rddr value to reflect dispute status, "true"
+	    
+	emit Disputed(ddrNumber);
     }
     
-    // reputable lexScribe can resolve rddr dispute with division of remaining payCap amount in wei / receive 5% fee / receive LEX mint, "1"
+    // reputable lexScribe can resolve rddr dispute with division of remaining payCap amount in wei accounting for 5% fee / receive fee + LEX mint, "1"
     function resolveDDR(uint256 ddrNumber, uint256 clientAward, uint256 providerAward) public {
         DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
 	
 	uint256 ddRemainder = ddr.payCap.sub(ddr.paid); // alias remainder rddr wei amount for rddr resolution reference
+	uint256 resolutionFee = ddRemainder.div(20); // calculates 5% lexScribe dispute resolution fee
 	
-	require(clientAward.add(providerAward) == ddRemainder); // program safety check / economics
+	require(ddr.disputed == true); // program safety check / status
+	require(clientAward.add(providerAward) == ddRemainder.sub(resolutionFee)); // program safety check / economics
         require(msg.sender != ddr.client); // program safety check / authorization / client cannot resolve own dispute as lexScribe
         require(msg.sender != ddr.provider); // program safety check / authorization / provider cannot resolve own dispute as lexScribe
         require(isReputable(msg.sender)); // program governance check / resolving lexScribe must be reputable
 	require(balanceOf(msg.sender) >= 5000000000000000000); // program governance check / resolving lexScribe must have at least "5" LEX balance
 	
-        uint256 resolutionFee = ddRemainder.div(20); // calculates 5% lexScribe dispute resolution fee
-	uint256 resolutionFeeSplit = resolutionFee.div(2); // calculates resolution fee split between client and provider
-	
-        ddr.ddrToken.transfer(ddr.client, clientAward.sub(resolutionFeeSplit)); // executes ERC-20 award transfer to rddr client
-        ddr.ddrToken.transfer(ddr.provider, providerAward.sub(resolutionFeeSplit)); // executes ERC-20 award transfer to rddr provider
+        ddr.ddrToken.transfer(ddr.client, clientAward); // executes ERC-20 award transfer to rddr client
+        ddr.ddrToken.transfer(ddr.provider, providerAward); // executes ERC-20 award transfer to rddr provider
     	ddr.ddrToken.transfer(msg.sender, resolutionFee); // executes ERC-20 fee transfer to resolving lexScribe
     	
-    	_mint(msg.sender, 1000000000000000000); // mint resolving lexScribe "1" LEX for contribution to TLDR
+    	_mint(msg.sender, 1000000000000000000); // mints resolving lexScribe "1" LEX for contribution to TLDR
 	
-	ddr.paid = ddr.paid.add(ddRemainder); // tallies remainder to paid wei amount to reflect rddr closure
+	 ddr.paid = ddr.paid.add(ddRemainder); // tallies remainder to paid wei amount to reflect rddr closure
+	    
+	 emit Resolved(ddrNumber);
     }
     
-    // pay rddr on TLDR
+    // client can call to pay rddr on TLDR
     function payDDR(uint256 ddrNumber) public { // releases escrowed ddrToken deliverableRate amount to provider (0x) address / lexFee for attached lexID lexAddress
     	DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
     	lexScriptWrapper storage lS = lexScript[ddr.lexID]; // retrieve LSW data
 	
-	require(ddr.disputed == false); // program safety check / dispute status
+	require(ddr.confirmed == true); // program safety check / status
+	require(ddr.disputed == false); // program safety check / status
     	require(now <= ddr.retainerTermination); // program safety check / time
-    	require(address(msg.sender) == ddr.client); // program safety check / authorization
+    	require(msg.sender == ddr.client); // program safety check / authorization
     	require(ddr.paid.add(ddr.deliverableRate) <= ddr.payCap); // program safety check / economics
 	
-    	uint256 lexFee = ddr.deliverableRate.div(lS.lexRate); // derive lexFee from rddr value
+    	uint256 lexFee = ddr.deliverableRate.div(lS.lexRate); // derives lexFee from rddr deliverableRate
 	
     	ddr.ddrToken.transfer(ddr.provider, ddr.deliverableRate.sub(lexFee)); // executes ERC-20 transfer to rddr provider in deliverableRate amount
     	ddr.ddrToken.transfer(lS.lexAddress, lexFee); // executes ERC-20 transfer of lexFee to (0x) lexAddress identified in lexID
@@ -934,12 +956,14 @@ contract lexDAOregistry is ScribeRole, ERC20 { // TLDR: internet-native market t
 	emit Paid(ddr.ddrNumber, ddr.lexID); 
     }
     
-    // withdraw rddr remainder on TLDR after termination
-    function withdrawDDR(uint256 ddrNumber) public { // releases escrowed ddrToken deliverableRate amount to provider (0x) address 
+    // client can call to withdraw rddr remainder on TLDR after termination
+    function withdrawRemainder(uint256 ddrNumber) public { // releases escrowed ddrToken deliverableRate amount to provider (0x) address 
     	DDR storage ddr = rddr[ddrNumber]; // retrieve rddr data
 	
+        require(ddr.confirmed == true); // program safety check / status
+        require(ddr.disputed == false); // program safety check / status
     	require(now >= ddr.retainerTermination); // program safety check / time
-    	require(address(msg.sender) == ddr.client); // program safety check / authorization
+    	require(msg.sender == ddr.client); // program safety check / authorization
     	
     	uint256 remainder = ddr.payCap.sub(ddr.paid); // derive rddr remainder
     	
