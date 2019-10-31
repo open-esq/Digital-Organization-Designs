@@ -931,9 +931,9 @@ contract TLDR is ScribeRole, ERC20 { // TLDR: internet-native market to wrap & e
     	
     	_mint(msg.sender, 1000000000000000000); // mints resolving lexScribe "1" LEX for contribution to TLDR
 	
-	 ddr.paid = ddr.paid.add(ddRemainder); // tallies remainder to paid wei amount to reflect rddr closure
+	ddr.paid = ddr.paid.add(ddRemainder); // tallies remainder to paid wei amount to reflect rddr closure
 	    
-	 emit Resolved(ddrNumber);
+	emit Resolved(ddrNumber);
     }
     
     // client can call to pay rddr on TLDR
