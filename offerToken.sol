@@ -508,11 +508,11 @@ contract offerToken is ERC20Burnable {
     string public name; // name for offerToken registration
     string public symbol; // symbol for offerToken registration
     string public offer; // stored offerToken terms / e.g., IPFS hash
-    uint256 public rate; // amount of wei required to buyToken and trigger offerToken mint function 
-    uint256 public min; // minimum amount of OfferToken required to redeem offer
-    uint256 public decimals; // default '18' to mirror ether to wei factoring in offerToken
-    address payable public offeror; // public address making offer for offerToken redemption / should be reasonably identified in offer
-    bool public closed; // public status of offer / default = "false" / adjustable by offeror
+    uint256 public rate; // mint rate amount of offerToken to ether (Ξ) / e.g., '10' = 1 ETH mints 10 offerToken
+    uint256 public min; // minimum amount of OfferToken required to redeem offer / e.g., '1' offerToken to burn and redeem stored offer
+    uint256 public decimals; // default '18' decimals to mirror ether-wei factoring in offerToken
+    address payable public offeror; // public address storing terms for offerToken redemption  
+    bool public closed; // public status of offer closure / default = "false" / adjustable by offeror
     
     uint256 public RR; // counter for offerToken redemption requests
     
@@ -545,7 +545,7 @@ contract offerToken is ERC20Burnable {
         decimals = _decimals;
         offeror = _offeror;
         
-        _mint(offeror, _init); 
+        _mint(offeror, _init); // mint offeror designated initial amount of offerToken 
     }
     
     modifier onlyOfferor {
@@ -553,18 +553,18 @@ contract offerToken is ERC20Burnable {
    	_;
     }
     
-    function adjustRate(uint256 newRate) public onlyOfferor {
+    function adjustOfferRate(uint256 newRate) public onlyOfferor { // offeror can adjust rate between ether (Ξ) and offerToken
         rate = newRate;
     }
     
-    function updateStatus(bool offerClosed) public onlyOfferor {
+    function updateOfferStatus(bool offerClosed) public onlyOfferor { // offeror can open and close offer
         closed = offerClosed;
     }
     
-    function buyOfferToken() public payable {
+    function buyOfferToken() public payable { // public can swap ether (Ξ) for offerToken at registered rate
         require(closed == false); // offer must be open to buy redemption units
         
-        _mint(msg.sender, msg.value.mul(rate)); // mints offerToken in exchange for ether msg.value at offer rate
+        _mint(msg.sender, msg.value.mul(rate)); // mints offerToken in exchange for ether (Ξ) msg.value at offer rate
         offeror.transfer(msg.value); // forwards ether (Ξ) to offeror 
     }
     
@@ -585,7 +585,7 @@ contract offerToken is ERC20Burnable {
             false);
     }
     
-    function writeResponse(uint256 rNumber, string memory response) public onlyOfferor {
+    function writeRedemptionResponse(uint256 rNumber, string memory response) public onlyOfferor {
         requests storage rr = redemptions[rNumber]; // retrieve RR data
         
         redemptions[rNumber] = requests( 
@@ -598,11 +598,11 @@ contract offerToken is ERC20Burnable {
             true);
     }
     
-    function writeReview(uint256 rNumber, string memory review) public {
+    function writeRedemptionReview(uint256 rNumber, string memory review) public {
         requests storage rr = redemptions[rNumber]; // retrieve RR data
         
         require(msg.sender == rr.requester); // only requester can store review of redemption responses
-        require(rr.responded == true); // response must be provided prior to review
+        require(rr.responded == true); // offeror response must be provided prior to review
 
         redemptions[rNumber] = requests( 
             rr.requester,
